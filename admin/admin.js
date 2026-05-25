@@ -17,6 +17,7 @@ window.adminDB = {
     try {
       await firebase.database().ref(path).set(data);
       localStorage.setItem(localKey, JSON.stringify(data));
+      console.log('✅ Saved to Firebase:', path);
       return true;
     } catch (e) {
       console.error('Firebase save error:', e);
@@ -25,26 +26,30 @@ window.adminDB = {
     }
   },
 
-  async getData(path) {
+  getData(path) {
     const localKey = this._getLocalKey(path);
     if (!window.firebaseReady) {
       const cached = localStorage.getItem(localKey);
-      return cached ? JSON.parse(cached) : null;
+      return Promise.resolve(cached ? JSON.parse(cached) : null);
     }
-    try {
-      const snapshot = await firebase.database().ref(path).get();
-      const data = snapshot.val();
-      if (data) {
-        localStorage.setItem(localKey, JSON.stringify(data));
-        return data;
-      }
-      const cached = localStorage.getItem(localKey);
-      return cached ? JSON.parse(cached) : null;
-    } catch (e) {
-      console.error('Firebase read error:', e);
-      const cached = localStorage.getItem(localKey);
-      return cached ? JSON.parse(cached) : null;
-    }
+    return new Promise((resolve) => {
+      firebase.database().ref(path).once('value')
+        .then((snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            localStorage.setItem(localKey, JSON.stringify(data));
+            resolve(data);
+          } else {
+            const cached = localStorage.getItem(localKey);
+            resolve(cached ? JSON.parse(cached) : null);
+          }
+        })
+        .catch((e) => {
+          console.warn('Firebase read fallback to localStorage:', path);
+          const cached = localStorage.getItem(localKey);
+          resolve(cached ? JSON.parse(cached) : null);
+        });
+    });
   }
 };
 
@@ -67,7 +72,7 @@ class AdminCMS {
     this.wrapper = document.getElementById('adminWrapper');
     this.checkAuth();
     this.setupEventListeners();
-    this.loadAllData();
+    await this.loadAllData();
     this.initCharts();
   }
 
@@ -138,7 +143,6 @@ class AdminCMS {
         e.preventDefault();
         const section = item.dataset.section;
         this.switchSection(section);
-
         if (window.innerWidth <= 768 && sidebar) {
           sidebar.classList.remove('open');
         }
@@ -203,7 +207,8 @@ class AdminCMS {
       sectionEl.classList.add('active');
     }
 
-    document.querySelector(`[data-section="${section}"]`).classList.add('active');
+    const navItem = document.querySelector(`[data-section="${section}"]`);
+    if (navItem) navItem.classList.add('active');
 
     const titles = {
       dashboard: '📊 Dashboard',
@@ -238,15 +243,19 @@ class AdminCMS {
 
     data.slug = this.generateSlug(data.title);
     data.publishDate = new Date().toISOString();
+    data.id = Date.now().toString();
 
     this.data[type + 's'].push(data);
 
-    await adminDB.saveData('cms_' + type + 's', this.data[type + 's']);
+    const saved = await adminDB.saveData('cms_' + type + 's', this.data[type + 's']);
 
-    this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} published successfully!`, 'success');
+    if (saved) {
+      this.showToast(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} published to Firebase!`, 'success');
+    } else {
+      this.showToast(`💾 ${type.charAt(0).toUpperCase() + type.slice(1)} saved locally!`, 'success');
+    }
 
     form.reset();
-
     this.loadContentList(type);
     this.renderPreview();
     await this.updateStats();
@@ -348,7 +357,6 @@ class AdminCMS {
   }
 
   async loadAllData() {
-    // Load from Firebase first, then fall back to localStorage
     for (const key of Object.keys(this.data)) {
       try {
         const fbData = await adminDB.getData('cms_' + key);
@@ -361,7 +369,6 @@ class AdminCMS {
           }
         }
       } catch (e) {
-        console.log('Using localStorage for', key);
         const stored = localStorage.getItem('cms_' + key);
         if (stored) {
           this.data[key] = JSON.parse(stored);
@@ -369,7 +376,6 @@ class AdminCMS {
       }
     }
 
-    // Load content lists
     this.loadContentList('job');
     this.loadContentList('scheme');
     this.loadContentList('course');
@@ -468,9 +474,7 @@ class AdminCMS {
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: {
-            legend: { position: 'bottom' }
-          }
+          plugins: { legend: { position: 'bottom' } }
         }
       });
     }
@@ -494,12 +498,8 @@ class AdminCMS {
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: {
-            legend: { display: true }
-          },
-          scales: {
-            y: { beginAtZero: true }
-          }
+          plugins: { legend: { display: true } },
+          scales: { y: { beginAtZero: true } }
         }
       });
     }
