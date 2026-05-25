@@ -63,7 +63,8 @@ class AdminCMS {
       schemes: [],
       courses: [],
       scholarships: [],
-      posts: []
+      posts: [],
+      media: []
     };
     this.init();
   }
@@ -233,13 +234,26 @@ class AdminCMS {
     const formData = new FormData(form);
 
     const data = {};
+    const filePromises = [];
+
     for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        data[`${key}Name`] = value.name || '';
+      const normalizedKey = key.endsWith('[]') ? key.slice(0, -2) : key;
+
+      if (value instanceof File && value.name) {
+        const promise = this.readFileAsDataURL(value).then((dataUrl) => {
+          data[`${normalizedKey}Name`] = value.name;
+          if (dataUrl) data[`${normalizedKey}Data`] = dataUrl;
+        });
+        filePromises.push(promise);
+      } else if (key.endsWith('[]')) {
+        data[normalizedKey] = Array.isArray(data[normalizedKey]) ? data[normalizedKey] : [];
+        data[normalizedKey].push(value);
       } else {
-        data[key] = value;
+        data[normalizedKey] = value;
       }
     }
+
+    await Promise.all(filePromises);
 
     data.slug = this.generateSlug(data.title);
     data.publishDate = new Date().toISOString();
@@ -259,6 +273,16 @@ class AdminCMS {
     this.loadContentList(type);
     this.renderPreview();
     await this.updateStats();
+  }
+
+  async readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Unable to read file'));
+      reader.readAsDataURL(file);
+    });
   }
 
   generateSlug(text) {
@@ -330,11 +354,39 @@ class AdminCMS {
     const formId = type + 'Form';
     const form = document.getElementById(formId);
 
+    if (Array.isArray(item.documents)) {
+      const listId = type === 'job' ? 'docsList' : type === 'scheme' ? 'schemeDocs' : type === 'scholarship' ? 'scholarshipDocs' : null;
+      if (listId) {
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
+        item.documents.forEach((doc) => {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.name = 'documents[]';
+          input.className = 'doc-input';
+          input.value = doc || '';
+          list.appendChild(input);
+        });
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'add-btn';
+        addBtn.textContent = '+ Add';
+        addBtn.onclick = () => {
+          if (type === 'job') addDocumentField();
+          if (type === 'scheme') addSchemeDocField();
+          if (type === 'scholarship') addScholarshipDocField();
+        };
+        list.appendChild(addBtn);
+      }
+    }
+
     Object.keys(item).forEach(key => {
       const field = form.elements[key];
       if (field) {
         if (field.type === 'checkbox') {
           field.checked = item[key];
+        } else if (field.length && field.length > 0) {
+          field[0].value = item[key];
         } else {
           field.value = item[key];
         }
@@ -384,6 +436,7 @@ class AdminCMS {
 
     await this.loadMessages();
     this.renderPreview();
+    this.renderMediaGallery();
     await this.updateStats();
   }
 
@@ -505,37 +558,78 @@ class AdminCMS {
     }
   }
 
-  handleMediaUpload(e) {
-    const files = e.target.files;
+  async handleMediaUpload(e) {
+    const files = Array.from(e.target.files || []);
     const gallery = document.getElementById('mediaGallery');
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const item = document.createElement('div');
-        item.className = 'media-item';
-        item.innerHTML = `
-          <img src="${event.target.result}" alt="${file.name}">
-          <div class="media-item-actions">
-            <button onclick="cms.copyMediaUrl('${event.target.result}')">📋 Copy</button>
-            <button onclick="cms.deleteMedia(this)">🗑️ Delete</button>
-          </div>
-        `;
-        gallery.appendChild(item);
+    for (const file of files) {
+      const dataUrl = await this.readFileAsDataURL(file);
+      const itemData = {
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        dataUrl
       };
-      reader.readAsDataURL(file);
-    });
+      this.data.media.push(itemData);
+      await adminDB.saveData('cms_media', this.data.media);
 
+      const item = document.createElement('div');
+      item.className = 'media-item';
+      item.dataset.mediaId = itemData.id;
+      item.innerHTML = `
+        <img src="${dataUrl}" alt="${file.name}">
+        <div class="media-item-actions">
+          <button type="button" onclick="cms.copyMediaUrl('${itemData.id}')">📋 Copy</button>
+          <button type="button" onclick="cms.deleteMedia(this)">🗑️ Delete</button>
+        </div>
+      `;
+      gallery.appendChild(item);
+    }
+
+    this.renderMediaGallery();
     this.showToast(`Uploaded ${files.length} media file(s)`, 'success');
   }
 
-  copyMediaUrl(url) {
-    navigator.clipboard.writeText(url);
-    this.showToast('Media URL copied to clipboard', 'success');
+  copyMediaUrl(id) {
+    const item = this.data.media.find(media => media.id === id);
+    if (item?.dataUrl) {
+      navigator.clipboard.writeText(item.dataUrl);
+      this.showToast('Media URL copied to clipboard', 'success');
+    } else {
+      this.showToast('Media URL not available', 'error');
+    }
   }
 
-  deleteMedia(btn) {
-    btn.closest('.media-item').remove();
+  renderMediaGallery() {
+    const gallery = document.getElementById('mediaGallery');
+    if (!gallery) return;
+    gallery.innerHTML = '';
+
+    this.data.media.forEach(itemData => {
+      const item = document.createElement('div');
+      item.className = 'media-item';
+      item.dataset.mediaId = itemData.id;
+      item.innerHTML = `
+        <img src="${itemData.dataUrl}" alt="${itemData.name}">
+        <div class="media-item-actions">
+          <button type="button" onclick="cms.copyMediaUrl('${itemData.id}')">📋 Copy</button>
+          <button type="button" onclick="cms.deleteMedia(this)">🗑️ Delete</button>
+        </div>
+      `;
+      gallery.appendChild(item);
+    });
+  }
+
+  async deleteMedia(btn) {
+    const item = btn.closest('.media-item');
+    const id = item?.dataset?.mediaId;
+    if (id) {
+      this.data.media = this.data.media.filter(media => media.id !== id);
+      await adminDB.saveData('cms_media', this.data.media);
+    }
+    if (item) item.remove();
+    this.renderMediaGallery();
     this.showToast('Media deleted', 'success');
   }
 
@@ -545,8 +639,8 @@ class AdminCMS {
 
     Object.values(this.data).forEach(collection => {
       collection.forEach(item => {
-        if (item.title?.toLowerCase().includes(query.toLowerCase()) ||
-            item.description?.toLowerCase().includes(query.toLowerCase())) {
+        const haystack = `${item.title || ''} ${item.description || ''} ${item.excerpt || ''} ${item.category || ''}`.toLowerCase();
+        if (haystack.includes(query.toLowerCase())) {
           results.push(item);
         }
       });
@@ -571,6 +665,7 @@ function addDocumentField() {
   const list = document.getElementById('docsList');
   const input = document.createElement('input');
   input.type = 'text';
+  input.name = 'documents[]';
   input.className = 'doc-input';
   input.placeholder = 'Add document';
   list.insertBefore(input, list.querySelector('.add-btn'));
@@ -580,6 +675,7 @@ function addSchemeDocField() {
   const list = document.getElementById('schemeDocs');
   const input = document.createElement('input');
   input.type = 'text';
+  input.name = 'documents[]';
   input.className = 'doc-input';
   input.placeholder = 'Add document';
   list.insertBefore(input, list.querySelector('.add-btn'));
@@ -589,6 +685,7 @@ function addScholarshipDocField() {
   const list = document.getElementById('scholarshipDocs');
   const input = document.createElement('input');
   input.type = 'text';
+  input.name = 'documents[]';
   input.className = 'doc-input';
   input.placeholder = 'Add document';
   list.insertBefore(input, list.querySelector('.add-btn'));
