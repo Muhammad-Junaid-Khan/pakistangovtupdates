@@ -16,7 +16,7 @@ window.adminDB = {
     }
     try {
       await firebase.database().ref(path).set(data);
-      localStorage.setItem(localKey, JSON.stringify(data)); // Also backup locally
+      localStorage.setItem(localKey, JSON.stringify(data));
       return true;
     } catch (e) {
       console.error('Firebase save error:', e);
@@ -24,6 +24,7 @@ window.adminDB = {
       return false;
     }
   },
+
   async getData(path) {
     const localKey = this._getLocalKey(path);
     if (!window.firebaseReady) {
@@ -34,7 +35,7 @@ window.adminDB = {
       const snapshot = await firebase.database().ref(path).get();
       const data = snapshot.val();
       if (data) {
-        localStorage.setItem(localKey, JSON.stringify(data)); // Update cache
+        localStorage.setItem(localKey, JSON.stringify(data));
         return data;
       }
       const cached = localStorage.getItem(localKey);
@@ -101,14 +102,13 @@ class AdminCMS {
     const btn = document.getElementById('githubAuthBtn');
     const passwordInput = document.getElementById('adminPasswordInput');
     modal.classList.add('show');
-    
+
     btn.addEventListener('click', () => {
       if (!passwordInput || passwordInput.value.trim() !== this.adminPassword) {
         this.showToast('Invalid password. Please enter the admin password.', 'error');
         return;
       }
 
-      // Simulate GitHub OAuth
       const mockUser = {
         name: 'Admin User',
         email: 'admin@example.com',
@@ -127,14 +127,12 @@ class AdminCMS {
     const sidebar = document.querySelector('.admin-sidebar');
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
 
-    // Mobile menu toggle
     if (mobileMenuToggle && sidebar) {
       mobileMenuToggle.addEventListener('click', () => {
         sidebar.classList.toggle('open');
       });
     }
 
-    // Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
@@ -147,7 +145,6 @@ class AdminCMS {
       });
     });
 
-    // Forms
     document.getElementById('jobForm').addEventListener('submit', (e) => {
       e.preventDefault();
       this.submitForm('job');
@@ -173,50 +170,41 @@ class AdminCMS {
       this.submitForm('post');
     });
 
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {
       localStorage.removeItem('cms_auth');
       location.reload();
     });
 
-    // Theme Toggle
     document.getElementById('themeToggle').addEventListener('click', () => {
-      document.documentElement.style.colorScheme = 
+      document.documentElement.style.colorScheme =
         document.documentElement.style.colorScheme === 'dark' ? 'light' : 'dark';
     });
 
-    // Global Search
     document.getElementById('globalSearch').addEventListener('input', (e) => {
       this.globalSearch(e.target.value);
     });
 
-    // Media Upload
     document.getElementById('mediaFile').addEventListener('change', (e) => {
       this.handleMediaUpload(e);
     });
   }
 
   switchSection(section) {
-    // Hide all sections
     document.querySelectorAll('.content-section').forEach(s => {
       s.classList.remove('active');
     });
 
-    // Remove active from nav
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.remove('active');
     });
 
-    // Show selected section
     const sectionEl = document.getElementById(section + '-content');
     if (sectionEl) {
       sectionEl.classList.add('active');
     }
 
-    // Set active nav item
     document.querySelector(`[data-section="${section}"]`).classList.add('active');
 
-    // Update page title
     const titles = {
       dashboard: '📊 Dashboard',
       jobs: '💼 Add Government Job',
@@ -238,8 +226,7 @@ class AdminCMS {
     const formId = type + 'Form';
     const form = document.getElementById(formId);
     const formData = new FormData(form);
-    
-    // Convert to object and sanitize files for JSON storage
+
     const data = {};
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
@@ -249,38 +236,20 @@ class AdminCMS {
       }
     }
 
-    // Generate slug
     data.slug = this.generateSlug(data.title);
-    
-    // Add timestamp
     data.publishDate = new Date().toISOString();
-    
-    // Add to data
+
     this.data[type + 's'].push(data);
-    
-    // Save via Firebase + localStorage
+
     await adminDB.saveData('cms_' + type + 's', this.data[type + 's']);
-    
-    // Show success message
+
     this.showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} published successfully!`, 'success');
-    
-    // Reset form
+
     form.reset();
-    
-    // Reload list
+
     this.loadContentList(type);
     this.renderPreview();
     await this.updateStats();
-  }
-
-  async saveToJSON(type, data) {
-    try {
-      // Save via Firebase + localStorage
-      await adminDB.saveData('cms_' + type, data);
-      console.log(`Saved ${type} to Firebase and localStorage`);
-    } catch (error) {
-      console.error('Error saving to storage:', error);
-    }
   }
 
   generateSlug(text) {
@@ -299,7 +268,7 @@ class AdminCMS {
     if (!container) return;
 
     const items = this.data[type + 's'] || [];
-    
+
     if (items.length === 0) {
       container.innerHTML = '<p class="muted">No ' + type + 's published yet.</p>';
       return;
@@ -351,8 +320,7 @@ class AdminCMS {
     const item = this.data[type + 's'][index];
     const formId = type + 'Form';
     const form = document.getElementById(formId);
-    
-    // Populate form with item data
+
     Object.keys(item).forEach(key => {
       const field = form.elements[key];
       if (field) {
@@ -364,7 +332,7 @@ class AdminCMS {
       }
     });
 
-    this.switchSection(type);
+    this.switchSection(type + 's');
     this.showToast('Edit mode - Make changes and click Publish to update', 'warn');
   }
 
@@ -380,34 +348,25 @@ class AdminCMS {
   }
 
   async loadAllData() {
-    // Load from Firebase first (if configured), then fall back to localStorage
+    // Load from Firebase first, then fall back to localStorage
     for (const key of Object.keys(this.data)) {
-      const fbData = await adminDB.getData('cms_' + key);
-      if (fbData && Array.isArray(fbData)) {
-        this.data[key] = fbData;
-      } else {
-        // Fall back to localStorage
+      try {
+        const fbData = await adminDB.getData('cms_' + key);
+        if (fbData && Array.isArray(fbData)) {
+          this.data[key] = fbData;
+        } else {
+          const stored = localStorage.getItem('cms_' + key);
+          if (stored) {
+            this.data[key] = JSON.parse(stored);
+          }
+        }
+      } catch (e) {
+        console.log('Using localStorage for', key);
         const stored = localStorage.getItem('cms_' + key);
         if (stored) {
           this.data[key] = JSON.parse(stored);
         }
       }
-    }
-
-    // Try to load from JSON files as additional source
-    try {
-      const responses = await Promise.all([
-        fetch('/data/jobs.json'),
-        fetch('/data/schemes.json'),
-        fetch('/data/posts.json')
-      ]);
-
-      const jsons = await Promise.all(responses.map(r => r.json().catch(() => [])));
-      if (jsons[0]?.length > 0) this.data.jobs = jsons[0];
-      if (jsons[1]?.length > 0) this.data.schemes = jsons[1];
-      if (jsons[2]?.length > 0) this.data.posts = jsons[2];
-    } catch (error) {
-      console.log('Using localStorage data');
     }
 
     // Load content lists
@@ -417,7 +376,6 @@ class AdminCMS {
     this.loadContentList('scholarship');
     this.loadContentList('post');
 
-    // Load messages, preview and update stats
     await this.loadMessages();
     this.renderPreview();
     await this.updateStats();
@@ -428,8 +386,7 @@ class AdminCMS {
     document.getElementById('totalSchemes').textContent = this.data.schemes.length;
     document.getElementById('totalPosts').textContent = this.data.posts.length;
     document.getElementById('totalMessages').textContent = await this.getMessageCount();
-    
-    // Update recent activity
+
     const recent = document.getElementById('recentList');
     const allItems = [
       ...this.data.jobs.map(j => ({ ...j, type: 'job' })),
@@ -489,7 +446,6 @@ class AdminCMS {
   }
 
   initCharts() {
-    // Content Distribution Chart
     const ctx1 = document.getElementById('contentChart')?.getContext('2d');
     if (ctx1) {
       new Chart(ctx1, {
@@ -519,7 +475,6 @@ class AdminCMS {
       });
     }
 
-    // Publishing Trend Chart
     const ctx2 = document.getElementById('publishChart')?.getContext('2d');
     if (ctx2) {
       new Chart(ctx2, {
@@ -553,7 +508,7 @@ class AdminCMS {
   handleMediaUpload(e) {
     const files = e.target.files;
     const gallery = document.getElementById('mediaGallery');
-    
+
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -588,7 +543,6 @@ class AdminCMS {
     if (!query) return;
     const results = [];
 
-    // Search in all data
     Object.values(this.data).forEach(collection => {
       collection.forEach(item => {
         if (item.title?.toLowerCase().includes(query.toLowerCase()) ||
@@ -598,7 +552,6 @@ class AdminCMS {
       });
     });
 
-    console.log(`Found ${results.length} results for "${query}"`);
     this.showToast(`Found ${results.length} results for "${query}"`, 'success');
   }
 
@@ -606,7 +559,7 @@ class AdminCMS {
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.className = `toast show ${type}`;
-    
+
     setTimeout(() => {
       toast.classList.remove('show');
     }, 3000);
