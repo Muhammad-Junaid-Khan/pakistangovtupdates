@@ -1,0 +1,111 @@
+backend:
+  name: github
+  repo: Muhammad-Junaid-Khan/PakistanGovtUpdates
+  branch: main
+  auth_endpoint: api/auth
+
+media_folder: assets/images/uploads
+public_folder: /assets/images/uploads
+
+collections:
+  - name: jobs
+    label: Government Jobs
+    folder: data/jobs
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Job Title, name: title, widget: string }
+      - { label: Department, name: department, widget: select, options: [PPSC, FPSC, PTS, FIA, Punjab Police, Army, ASF, WAPDA, NTS, Bank] }
+      - { label: Category, name: category, widget: select, options: [FIA Jobs, PPSC Jobs, Punjab Police Jobs, Army Jobs, ASF Jobs, WAPDA Jobs, FPSC Jobs, NTS Jobs, PTS Jobs, Bank Jobs, Govt Jobs] }
+      - { label: Province, name: province, widget: select, options: [Punjab, Sindh, KPK, Balochistan, Islamabad, GB, AJK] }
+      - { label: City, name: city, widget: string }
+      - { label: Last Date, name: lastDate, widget: datetime }
+      - { label: Eligibility, name: eligibility, widget: text }
+      - { label: Education Required, name: education, widget: string }
+      - { label: Age Limit, name: ageLimit, widget: string }
+      - { label: Salary (optional), name: salary, widget: string, required: false }
+      - { label: How To Apply, name: howToApply, widget: text }
+      - { label: Required Documents, name: documents, widget: list }
+      - { label: Official Apply Link, name: applyLink, widget: string }
+      - { label: Featured Image, name: image, widget: image }
+      - { label: SEO Meta Title, name: seoTitle, widget: string }
+      - { label: SEO Description, name: seoDescription, widget: text }
+      - { label: Focus Keyword, name: focusKeyword, widget: string }
+      - { label: FAQ Section, name: faqSection, widget: list, fields: [{ label: Question, name: q, widget: string }, { label: Answer, name: a, widget: text }] }
+      - { label: Featured, name: featured, widget: boolean, default: false }
+      - { label: Publish Date, name: publishDate, widget: datetime }
+
+  - name: schemes
+    label: Government Schemes
+    folder: data/schemes
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Scheme Title, name: title, widget: string }
+      - { label: Department, name: department, widget: string }
+      - { label: Category, name: category, widget: select, options: [BISP 8171, Apna Ghar Apni Chat, Rashan Program, Solar Scheme, Laptop Scheme, CM Punjab Schemes, Youth Loan Scheme, Ehsaas Program] }
+      - { label: Eligibility, name: eligibility, widget: text }
+      - { label: Benefits, name: benefits, widget: text }
+      - { label: Required Documents, name: documents, widget: list }
+      - { label: Registration Process, name: process, widget: text }
+      - { label: Deadline, name: deadline, widget: datetime }
+      - { label: Official Link, name: link, widget: string }
+      - { label: Featured Image, name: image, widget: image }
+      - { label: SEO Meta Title, name: seoTitle, widget: string }
+      - { label: SEO Description, name: seoDescription, widget: text }
+      - { label: Featured, name: featured, widget: boolean, default: false }
+      - { label: Publish Date, name: publishDate, widget: datetime }
+
+  - name: courses
+    label: NAVTTC Courses
+    folder: data/courses
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Course Title, name: title, widget: string }
+      - { label: Institute, name: institute, widget: string }
+      - { label: Duration, name: duration, widget: string }
+      - { label: Eligibility, name: eligibility, widget: text }
+      - { label: How To Apply, name: howToApply, widget: text }
+      - { label: Deadline, name: deadline, widget: datetime }
+      - { label: Course Category, name: category, widget: string }
+      - { label: Official Link, name: link, widget: string }
+      - { label: Featured Image, name: image, widget: image }
+      - { label: SEO Meta Title, name: seoTitle, widget: string }
+      - { label: SEO Description, name: seoDescription, widget: text }
+      - { label: Publish Date, name: publishDate, widget: datetime }
+
+  - name: scholarships
+    label: Scholarships
+    folder: data/scholarships
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Scholarship Name, name: title, widget: string }
+      - { label: Eligibility, name: eligibility, widget: text }
+      - { label: Country, name: country, widget: string }
+      - { label: Deadline, name: deadline, widget: datetime }
+      - { label: Apply Process, name: applyProcess, widget: text }
+      - { label: Documents Required, name: documents, widget: list }
+      - { label: Official Link, name: link, widget: string }
+      - { label: Featured Image, name: image, widget: image }
+      - { label: SEO Meta Title, name: seoTitle, widget: string }
+      - { label: SEO Description, name: seoDescription, widget: text }
+      - { label: Publish Date, name: publishDate, widget: datetime }
+
+  - name: posts
+    label: Government Updates
+    folder: data/posts
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Content, name: body, widget: markdown }
+      - { label: Category, name: category, widget: string }
+      - { label: Featured Image, name: image, widget: image }
+      - { label: Excerpt, name: excerpt, widget: text }
+      - { label: SEO Meta Title, name: seoTitle, widget: string }
+      - { label: SEO Description, name: seoDescription, widget: text }
+      - { label: Focus Keyword, name: focusKeyword, widget: string }
+      - { label: Featured, name: featured, widget: boolean, default: false }
+      - { label: Publish Date, name: publishDate, widget: datetime }

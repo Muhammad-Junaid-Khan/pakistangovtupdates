@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - PakistanGovtUpdates CMS</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="adminWrapper" class="admin-wrapper hidden">
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-header">
+        <h2>📊 CMS Admin</h2>
+        <p class="user-info">Logged as: <span id="userDisplay">Admin</span></p>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item active" data-section="dashboard">
+          <span class="icon">📈</span> Dashboard
+        </a>
+        <a href="#jobs" class="nav-item" data-section="jobs">
+          <span class="icon">💼</span> Add Job
+        </a>
+        <a href="#schemes" class="nav-item" data-section="schemes">
+          <span class="icon">🏛️</span> Add Scheme
+        </a>
+        <a href="#courses" class="nav-item" data-section="courses">
+          <span class="icon">📚</span> Add Course
+        </a>
+        <a href="#scholarships" class="nav-item" data-section="scholarships">
+          <span class="icon">🎓</span> Add Scholarship
+        </a>
+        <a href="#posts" class="nav-item" data-section="posts">
+          <span class="icon">📰</span> Add Update
+        </a>
+        <a href="#media" class="nav-item" data-section="media">
+          <span class="icon">📸</span> Media Upload
+        </a>
+        <a href="#seo" class="nav-item" data-section="seo">
+          <span class="icon">🔍</span> SEO Settings
+        </a>
+        <a href="#messages" class="nav-item" data-section="messages">
+          <span class="icon">💬</span> Contact Messages
+        </a>
+        <a href="#analytics" class="nav-item" data-section="analytics">
+          <span class="icon">📊</span> Analytics
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn">🚪 Logout</button>
+        <p class="version">v1.0.0</p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
+      <!-- Header -->
+      <header class="admin-header">
+        <div class="header-left">
+          <button id="mobileMenuToggle" class="mobile-menu-btn" aria-label="Open navigation menu">☰</button>
+          <h1 id="pageTitle">Dashboard</h1>
+          <p class="breadcrumb" id="breadcrumb">Home</p>
+        </div>
+        <div class="header-right">
+          <input type="search" id="globalSearch" placeholder="Search anything..." class="search-box">
+          <button id="themeToggle" class="theme-toggle">🌙</button>
+        </div>
+      </header>
+
+      <!-- Content Container -->
+      <div class="admin-content">
+
+        <!-- DASHBOARD SECTION -->
+        <section id="dashboard-content" class="content-section active">
+          <div class="dashboard-grid">
+            <!-- Stats Cards -->
+            <div class="stats-container">
+              <div class="stat-card">
+                <div class="stat-icon">💼</div>
+                <div class="stat-content">
+                  <p class="stat-label">Total Jobs</p>
+                  <h3 class="stat-value" id="totalJobs">0</h3>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">🏛️</div>
+                <div class="stat-content">
+                  <p class="stat-label">Total Schemes</p>
+                  <h3 class="stat-value" id="totalSchemes">0</h3>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">📰</div>
+                <div class="stat-content">
+                  <p class="stat-label">Total Posts</p>
+                  <h3 class="stat-value" id="totalPosts">0</h3>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon">📧</div>
+                <div class="stat-content">
+                  <p class="stat-label">Messages</p>
+                  <h3 class="stat-value" id="totalMessages">0</h3>
+                </div>
+              </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+              <div class="chart-container">
+                <h3>Content Distribution</h3>
+                <canvas id="contentChart"></canvas>
+              </div>
+              <div class="chart-container">
+                <h3>Published by Month</h3>
+                <canvas id="publishChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+              <h3>Recently Published</h3>
+              <div id="recentList" class="activity-list">Loading...</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ADD JOB SECTION -->
+        <section id="jobs-content" class="content-section">
+          <div class="form-container">
+            <h2>Add Government Job</h2>
+            <form id="jobForm" class="cms-form">
+              <div class="form-group">
+                <label>Job Title *</label>
+                <input type="text" name="title" required placeholder="e.g., PPSC Lecturer Mathematics">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Department *</label>
+                  <select name="department" required>
+                    <option>Select Department</option>
+                    <option>PPSC</option>
+                    <option>FPSC</option>
+                    <option>PTS</option>
+                    <option>FIA</option>
+                    <option>Punjab Police</option>
+                    <option>Army</option>
+                    <option>ASF</option>
+                    <option>WAPDA</option>
+                    <option>NTS</option>
+                    <option>Bank</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Category *</label>
+                  <select name="category" required>
+                    <option>Select Category</option>
+                    <option>FIA Jobs</option>
+                    <option>PPSC Jobs</option>
+                    <option>Punjab Police Jobs</option>
+                    <option>Army Jobs</option>
+                    <option>ASF Jobs</option>
+                    <option>WAPDA Jobs</option>
+                    <option>FPSC Jobs</option>
+                    <option>NTS Jobs</option>
+                    <option>PTS Jobs</option>
+                    <option>Bank Jobs</option>
+                    <option>Govt Jobs</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Province *</label>
+                  <select name="province" required>
+                    <option>Select Province</option>
+                    <option>Punjab</option>
+                    <option>Sindh</option>
+                    <option>KPK</option>
+                    <option>Balochistan</option>
+                    <option>Islamabad</option>
+                    <option>GB</option>
+                    <option>AJK</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>City *</label>
+                  <input type="text" name="city" required placeholder="e.g., Lahore">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Last Application Date *</label>
+                  <input type="datetime-local" name="lastDate" required>
+                </div>
+                <div class="form-group">
+                  <label>Salary (optional)</label>
+                  <input type="text" name="salary" placeholder="e.g., 40,000 - 80,000">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Education Required *</label>
+                  <input type="text" name="education" required placeholder="e.g., Master's Degree">
+                </div>
+                <div class="form-group">
+                  <label>Age Limit *</label>
+                  <input type="text" name="ageLimit" required placeholder="e.g., 18-35 years">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Eligibility *</label>
+                <textarea name="eligibility" required placeholder="Detailed eligibility criteria" rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>How To Apply *</label>
+                <textarea name="howToApply" required placeholder="Step-by-step application process" rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Required Documents *</label>
+                <div id="docsList" class="dynamic-list">
+                  <input type="text" placeholder="Add document" class="doc-input">
+                  <button type="button" class="add-btn" onclick="addDocumentField()">+ Add</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Official Apply Link *</label>
+                <input type="url" name="applyLink" required placeholder="https://example.com/apply">
+              </div>
+
+              <div class="form-group">
+                <label>Featured Image *</label>
+                <div class="file-upload">
+                  <input type="file" name="image" accept="image/*" required>
+                  <p>Upload job advertisement image</p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Meta Title *</label>
+                <input type="text" name="seoTitle" required placeholder="PPSC Lecturer Mathematics Jobs 2026">
+              </div>
+
+              <div class="form-group">
+                <label>SEO Description *</label>
+                <textarea name="seoDescription" required placeholder="Meta description for search engines" rows="3"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Focus Keyword *</label>
+                <input type="text" name="focusKeyword" required placeholder="Main keyword for SEO">
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" name="featured"> Mark as Featured
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">📤 Publish Job</button>
+                <button type="reset" class="btn-secondary">🔄 Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Jobs List -->
+          <div class="list-container">
+            <h3>Published Jobs</h3>
+            <div id="jobsList" class="content-list">Loading jobs...</div>
+          </div>
+        </section>
+
+        <!-- ADD SCHEME SECTION -->
+        <section id="schemes-content" class="content-section">
+          <div class="form-container">
+            <h2>Add Government Scheme</h2>
+            <form id="schemeForm" class="cms-form">
+              <div class="form-group">
+                <label>Scheme Title *</label>
+                <input type="text" name="title" required placeholder="e.g., BISP 8171 Cash Support">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Department *</label>
+                  <input type="text" name="department" required>
+                </div>
+                <div class="form-group">
+                  <label>Category *</label>
+                  <select name="category" required>
+                    <option>Select Category</option>
+                    <option>BISP 8171</option>
+                    <option>Apna Ghar Apni Chat</option>
+                    <option>Rashan Program</option>
+                    <option>Solar Scheme</option>
+                    <option>Laptop Scheme</option>
+                    <option>CM Punjab Schemes</option>
+                    <option>Youth Loan Scheme</option>
+                    <option>Ehsaas Program</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Eligibility *</label>
+                <textarea name="eligibility" required placeholder="Eligibility criteria" rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Benefits *</label>
+                <textarea name="benefits" required placeholder="Scheme benefits" rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Registration Process *</label>
+                <textarea name="process" required placeholder="How to register" rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Required Documents *</label>
+                <div id="schemeDocs" class="dynamic-list">
+                  <input type="text" placeholder="Add document" class="doc-input">
+                  <button type="button" class="add-btn" onclick="addSchemeDocField()">+ Add</button>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Deadline *</label>
+                  <input type="datetime-local" name="deadline" required>
+                </div>
+                <div class="form-group">
+                  <label>Official Link *</label>
+                  <input type="url" name="link" required placeholder="https://scheme.example.com">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Featured Image *</label>
+                <div class="file-upload">
+                  <input type="file" name="image" accept="image/*" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Meta Title *</label>
+                <input type="text" name="seoTitle" required>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Description *</label>
+                <textarea name="seoDescription" required rows="3"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" name="featured"> Mark as Featured
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">📤 Publish Scheme</button>
+                <button type="reset" class="btn-secondary">🔄 Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Schemes List -->
+          <div class="list-container">
+            <h3>Published Schemes</h3>
+            <div id="schemesList" class="content-list">Loading schemes...</div>
+          </div>
+        </section>
+
+        <!-- ADD COURSE SECTION -->
+        <section id="courses-content" class="content-section">
+          <div class="form-container">
+            <h2>Add NAVTTC Course</h2>
+            <form id="courseForm" class="cms-form">
+              <div class="form-group">
+                <label>Course Title *</label>
+                <input type="text" name="title" required placeholder="e.g., Welding Certificate">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Institute *</label>
+                  <input type="text" name="institute" required placeholder="Institute name">
+                </div>
+                <div class="form-group">
+                  <label>Duration *</label>
+                  <input type="text" name="duration" required placeholder="e.g., 6 months">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Eligibility *</label>
+                <textarea name="eligibility" required rows="3"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>How To Apply *</label>
+                <textarea name="howToApply" required rows="4"></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Category *</label>
+                  <input type="text" name="category" required placeholder="e.g., Technical">
+                </div>
+                <div class="form-group">
+                  <label>Deadline *</label>
+                  <input type="datetime-local" name="deadline" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Official Link *</label>
+                <input type="url" name="link" required>
+              </div>
+
+              <div class="form-group">
+                <label>Featured Image *</label>
+                <div class="file-upload">
+                  <input type="file" name="image" accept="image/*" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Meta Title *</label>
+                <input type="text" name="seoTitle" required>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Description *</label>
+                <textarea name="seoDescription" required rows="3"></textarea>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">📤 Publish Course</button>
+                <button type="reset" class="btn-secondary">🔄 Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Courses List -->
+          <div class="list-container">
+            <h3>Published Courses</h3>
+            <div id="coursesList" class="content-list">Loading courses...</div>
+          </div>
+        </section>
+
+        <!-- ADD SCHOLARSHIP SECTION -->
+        <section id="scholarships-content" class="content-section">
+          <div class="form-container">
+            <h2>Add Scholarship</h2>
+            <form id="scholarshipForm" class="cms-form">
+              <div class="form-group">
+                <label>Scholarship Name *</label>
+                <input type="text" name="title" required placeholder="e.g., Fulbright Scholarship">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Country *</label>
+                  <input type="text" name="country" required placeholder="e.g., USA">
+                </div>
+                <div class="form-group">
+                  <label>Deadline *</label>
+                  <input type="datetime-local" name="deadline" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Eligibility *</label>
+                <textarea name="eligibility" required rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Application Process *</label>
+                <textarea name="applyProcess" required rows="4"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Documents Required *</label>
+                <div id="scholarshipDocs" class="dynamic-list">
+                  <input type="text" placeholder="Add document" class="doc-input">
+                  <button type="button" class="add-btn" onclick="addScholarshipDocField()">+ Add</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Official Link *</label>
+                <input type="url" name="link" required>
+              </div>
+
+              <div class="form-group">
+                <label>Featured Image *</label>
+                <div class="file-upload">
+                  <input type="file" name="image" accept="image/*" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Meta Title *</label>
+                <input type="text" name="seoTitle" required>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Description *</label>
+                <textarea name="seoDescription" required rows="3"></textarea>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">📤 Publish Scholarship</button>
+                <button type="reset" class="btn-secondary">🔄 Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Scholarships List -->
+          <div class="list-container">
+            <h3>Published Scholarships</h3>
+            <div id="scholarshipsList" class="content-list">Loading scholarships...</div>
+          </div>
+        </section>
+
+        <!-- ADD POST SECTION -->
+        <section id="posts-content" class="content-section">
+          <div class="form-container">
+            <h2>Add Government Update</h2>
+            <form id="postForm" class="cms-form">
+              <div class="form-group">
+                <label>Title *</label>
+                <input type="text" name="title" required placeholder="Post title">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Category *</label>
+                  <input type="text" name="category" required placeholder="e.g., News, Update">
+                </div>
+                <div class="form-group">
+                  <label>Featured Image *</label>
+                  <div class="file-upload">
+                    <input type="file" name="image" accept="image/*" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Excerpt *</label>
+                <textarea name="excerpt" required placeholder="Brief summary" rows="2"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Full Content *</label>
+                <textarea name="body" required placeholder="Full post content" rows="8"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Meta Title *</label>
+                <input type="text" name="seoTitle" required>
+              </div>
+
+              <div class="form-group">
+                <label>SEO Description *</label>
+                <textarea name="seoDescription" required rows="2"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Focus Keyword *</label>
+                <input type="text" name="focusKeyword" required>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" name="featured"> Mark as Featured
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-primary">📤 Publish Update</button>
+                <button type="reset" class="btn-secondary">🔄 Clear</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Posts List -->
+          <div class="list-container">
+            <h3>Published Updates</h3>
+            <div id="postsList" class="content-list">Loading posts...</div>
+          </div>
+        </section>
+
+        <!-- SEO SETTINGS SECTION -->
+        <section id="seo-content" class="content-section">
+          <div class="settings-container">
+            <h2>SEO Settings</h2>
+            <form id="seoForm" class="cms-form">
+              <div class="form-group">
+                <label>Site Title</label>
+                <input type="text" id="siteTitle" value="Pakistan Govt Jobs & Schemes Portal">
+              </div>
+              <div class="form-group">
+                <label>Site Description</label>
+                <textarea id="siteDesc" rows="3">Latest Government Jobs, Schemes, NAVTTC Courses & Scholarships Updates in Pakistan</textarea>
+              </div>
+              <div class="form-group">
+                <label>Focus Keywords</label>
+                <textarea id="focusKeywords" rows="3" placeholder="One per line">Pakistan government jobs
+NAVTTC courses
+Scholarships 2026</textarea>
+              </div>
+              <div class="form-group">
+                <label>Google Analytics ID</label>
+                <input type="text" id="gaId" placeholder="G-XXXXXXXXXX">
+              </div>
+              <div class="form-group">
+                <label>Google AdSense ID</label>
+                <input type="text" id="adsenseId" placeholder="ca-pub-xxxxxxxxxxxxxxxx">
+              </div>
+              <button type="button" class="btn-primary" onclick="saveSEOSettings()">💾 Save SEO Settings</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- MEDIA UPLOAD SECTION -->
+        <section id="media-content" class="content-section">
+          <div class="media-container">
+            <h2>Media Upload & Management</h2>
+            <div class="media-uploader">
+              <div class="file-upload large">
+                <input type="file" id="mediaFile" accept="image/*,video/*" multiple>
+                <p>Drag and drop media files or click to upload</p>
+              </div>
+            </div>
+            <div id="mediaGallery" class="media-gallery"></div>
+          </div>
+        </section>
+
+        <!-- CONTACT MESSAGES SECTION -->
+        <section id="messages-content" class="content-section">
+          <h2>Contact Messages</h2>
+          <div id="messagesList" class="messages-list">Loading messages...</div>
+        </section>
+
+        <!-- ANALYTICS SECTION -->
+        <section id="analytics-content" class="content-section">
+          <h2>Analytics Overview</h2>
+          <div class="analytics-container">
+            <div class="analytics-card">
+              <h4>Site Visitors</h4>
+              <p class="stat-value">--</p>
+              <p class="note">Connect Google Analytics to view data</p>
+            </div>
+            <div class="analytics-card">
+              <h4>Page Views</h4>
+              <p class="stat-value">--</p>
+            </div>
+            <div class="analytics-card">
+              <h4>Average Session Duration</h4>
+              <p class="stat-value">--</p>
+            </div>
+            <div class="analytics-card">
+              <h4>Bounce Rate</h4>
+              <p class="stat-value">--</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Authentication Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <h2>Admin Authentication</h2>
+      <p>Enter your admin password and sign in to access the dashboard.</p>
+      <input id="adminPasswordInput" type="password" placeholder="Admin password" class="auth-input">
+      <button id="githubAuthBtn" class="btn-primary large">
+        🔑 Sign in with GitHub
+      </button>
+      <p class="auth-note">This panel requires authentication. In a live deployment, replace this demo password with your own secure admin flow.</p>
+    </div>
+  </div>
+
+  <!-- Success/Error Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase for cross-device data sync -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js"></script>
+  <script>
+    // Firebase Configuration - UPDATE WITH YOUR CONFIG
+    const firebaseConfig = {
+  apiKey: "AIzaSyBf7anqGE2v8VbmjcwsuOE34RS9IsAQgAI",
+  authDomain: "pakistangovjobs-d9cc0.firebaseapp.com",
+  databaseURL: "https://pakistangovjobs-d9cc0-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "pakistangovjobs-d9cc0",
+  storageBucket: "pakistangovjobs-d9cc0.firebasestorage.app",
+  messagingSenderId: "443901497043",
+  appId: "1:443901497043:web:0370688fdba8e03e584e26"
+};
+    
+    // Initialize Firebase if config is valid
+    if (firebaseConfig.projectId && firebaseConfig.projectId !== 'pakistangovjobs') {
+      firebase.initializeApp(firebaseConfig);
+      window.firebaseReady = true;
+    } else {
+      console.warn('Firebase not configured. To enable cross-device sync:\\n1. Create Firebase project at https://console.firebase.google.com\\n2. Enable Realtime Database\\n3. Update firebaseConfig in admin/index.html');
+      window.firebaseReady = false;
+    }
+  </script>
+
+  <script src="admin.js"></script>
+</body>
+</html>

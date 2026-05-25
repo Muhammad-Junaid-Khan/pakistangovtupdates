@@ -1,0 +1,34 @@
+[
+  {
+    "id": "fulbright-scholarship",
+    "slug": "fulbright-scholarship-2026",
+    "title": "Fulbright Scholarship - USA 2026",
+    "country": "United States",
+    "excerpt": "Prestigious scholarship for Pakistani students to study in USA universities.",
+    "eligibility": "Bachelor's degree completed. Age 25-45 years. TOEFL scores required. English proficiency.",
+    "applyProcess": "1. Take TOEFL/IELTS exam\\n2. Visit USEFP website\\n3. Submit application online\\n4. Prepare for interviews\\n5. Await selection",
+    "deadline": "2026-10-31T23:59:59Z",
+    "documents": ["Bachelor's Degree", "TOEFL/IELTS", "Passport", "Transcripts", "Recommendation Letters"],
+    "link": "https://www.usefp.org",
+    "image": "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&w=900&q=80",
+    "seoTitle": "Fulbright Scholarship USA 2026 - Apply Now",
+    "seoDescription": "Apply for prestigious Fulbright scholarship to study in USA. Check eligibility and requirements.",
+    "publishDate": "2026-05-20T14:00:00Z"
+  },
+  {
+    "id": "commonwealth-scholarship",
+    "slug": "commonwealth-scholarship-2026",
+    "title": "Commonwealth Scholarship - UK 2026",
+    "country": "United Kingdom",
+    "excerpt": "Full funding scholarship for Masters and PhD students from Commonwealth countries.",
+    "eligibility": "Bachelor's degree from recognized university. Age under 35 years for Masters. English proficiency.",
+    "applyProcess": "1. Check eligible programs\\n2. Apply through university\\n3. University submits to CSC\\n4. Wait for selection\\n5. Get visa support",
+    "deadline": "2026-09-30T23:59:59Z",
+    "documents": ["Bachelor's Degree", "English Proficiency", "Transcripts", "Motivation Letter", "Academic References"],
+    "link": "https://cscuk.dfid.gov.uk",
+    "image": "https://images.unsplash.com/photo-1516594915697-87eb3b1b3069?auto=format&fit=crop&w=900&q=80",
+    "seoTitle": "Commonwealth Scholarship UK 2026 - Full Funding",
+    "seoDescription": "Commonwealth scholarship for Masters and PhD. Full funding from UK government. Apply now.",
+    "publishDate": "2026-05-18T11:20:00Z"
+  }
+]

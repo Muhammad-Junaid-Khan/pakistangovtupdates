@@ -1,0 +1,76 @@
+[
+  {
+    "id":"scheme-bisp-8171",
+    "category":"BISP 8171 Scheme",
+    "title":"BISP 8171 Ehsaas Update",
+    "date":"2026-04-10",
+    "excerpt":"Latest information on BISP registration, eligibility and support for low-income families.",
+    "apply":"https://www.pass.gov.pk/",
+    "content":"<p>Learn how to check your BISP 8171 status, submit documents, and receive updates from the official portal.</p>"
+  },
+  {
+    "id":"scheme-apna-ghar",
+    "category":"Apna Ghar Apni Chat Scheme",
+    "title":"Apna Ghar Apni Chhat Scheme",
+    "date":"2026-03-25",
+    "excerpt":"Housing scheme guide for applicants seeking affordable home financing options.",
+    {
+      "id": "bisp-8171-2026",
+      "slug": "bisp-8171-cash-support-2026",
+      "title": "BISP 8171 Cash Support Program 2026",
+      "department": "Ministry of Human Development",
+      "category": "BISP 8171",
+      "excerpt": "Benazir Income Support Program - Direct cash assistance for families below poverty line.",
+      "eligibility": "Annual household income below Rs. 144,000. Pakistani citizens. Head of household female preferred.",
+      "benefits": "Rs. 8,171 per quarter directly to beneficiary account. Additional stipends for school children attendance.",
+      "process": "1. Check eligibility\\n2. Register at nearby Nadra office\\n3. Submit required documents\\n4. Get selected in draw\\n5. Receive payments through bank account",
+      "documents": ["CNIC", "Nadra Certificate", "Income Certificate", "Bank Account Details"],
+      "deadline": "2026-12-31T23:59:59Z",
+      "link": "https://www.bisp.gov.pk",
+      "image": "https://images.unsplash.com/photo-1554224311-beee415c15c9?auto=format&fit=crop&w=900&q=80",
+      "seoTitle": "BISP 8171 Program 2026 - Cash Support Scheme",
+      "seoDescription": "Benazir Income Support Program BISP 8171 - Check eligibility, benefits, and how to apply.",
+      "featured": true,
+      "publishDate": "2026-05-20T08:00:00Z"
+    },
+    {
+      "id": "apna-ghar-scheme",
+      "slug": "apna-ghar-apni-chat-scheme-2026",
+      "title": "Apna Ghar Apni Chat Housing Scheme",
+      "department": "Ministry of Housing & Works",
+      "category": "Apna Ghar Apni Chat",
+      "excerpt": "Government housing scheme to provide affordable homes to low-income families.",
+      "eligibility": "Monthly income Rs. 35,000-50,000. Married individuals. Pakistan citizen. No previous allotment.",
+      "benefits": "Affordable housing plot with easy installments. Subsidized house construction. Government support.",
+      "process": "1. Apply online\\n2. Submit financial documents\\n3. Wait for draw\\n4. Receive plot allotment\\n5. Start construction",
+      "documents": ["CNIC", "Income Certificate", "Marriage Certificate", "Bank Statements"],
+      "deadline": "2026-11-30T23:59:59Z",
+      "link": "https://www.housing.gov.pk",
+      "image": "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=900&q=80",
+      "seoTitle": "Apna Ghar Apni Chat - Housing Scheme 2026",
+      "seoDescription": "Apply for government housing scheme. Get affordable homes with easy payments.",
+      "featured": true,
+      "publishDate": "2026-05-19T10:15:00Z"
+    }
+  ]
+    "content":"<p>Understand eligibility, required documents and how to submit an application for the housing initiative.</p>"
+  },
+  {
+    "id":"scheme-rashan-card",
+    "category":"Rashan Card / Utility Programs",
+    "title":"Rashan Card Support Programme",
+    "date":"2026-04-18",
+    "excerpt":"Updated guidance for Rashan Card and utility support programs across Pakistan.",
+    "apply":"https://www.pass.gov.pk/",
+    "content":"<p>Find directions for applying to Rashan Card assistance and other utility support initiatives.</p>"
+  },
+  {
+    "id":"scheme-govt-announcement",
+    "category":"Govt Announcements",
+    "title":"New Government Support Announcement",
+    "date":"2026-05-02",
+    "excerpt":"A new government support announcement with application deadlines and contact points.",
+    "apply":"https://www.pakistan.gov.pk/",
+    "content":"<p>Review the latest scheme announcement carefully and follow official links for registration.</p>"
+  }
+]

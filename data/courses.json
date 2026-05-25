@@ -1,0 +1,36 @@
+[
+  {
+    "id": "welding-certificate",
+    "slug": "welding-certificate-navttc",
+    "title": "Welding Certificate Course - NAVTTC",
+    "institute": "NAVTTC Approved Institute",
+    "duration": "6 months",
+    "eligibility": "Matriculation or equivalent. Age 18-35 years.",
+    "excerpt": "Professional welding course certified by NAVTTC. Industry-recognized qualification.",
+    "howToApply": "Visit NAVTTC approved institute, fill form, submit documents, and enroll.",
+    "deadline": "2026-12-31T23:59:59Z",
+    "category": "Technical",
+    "link": "https://www.navttc.gov.pk",
+    "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=900&q=80",
+    "seoTitle": "Welding Certificate Course - NAVTTC 2026",
+    "seoDescription": "Learn professional welding skills. Get NAVTTC certified course. Apply now for 6-month program.",
+    "publishDate": "2026-05-20T12:00:00Z"
+  },
+  {
+    "id": "graphic-design-course",
+    "slug": "graphic-design-course-navttc",
+    "title": "Graphic Design Diploma - NAVTTC",
+    "institute": "Digital Institute, Lahore",
+    "duration": "1 year",
+    "eligibility": "Intermediate or equivalent. Basic computer knowledge.",
+    "excerpt": "Learn professional graphic design with industry-standard tools and software.",
+    "howToApply": "Apply online or visit institute office with documents.",
+    "deadline": "2026-11-30T23:59:59Z",
+    "category": "IT & Design",
+    "link": "https://www.navttc.gov.pk",
+    "image": "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=900&q=80",
+    "seoTitle": "Graphic Design Diploma - NAVTTC Certified",
+    "seoDescription": "Professional graphic design diploma with NAVTTC certification. Learn Photoshop, Illustrator, and web design.",
+    "publishDate": "2026-05-19T10:30:00Z"
+  }
+]
