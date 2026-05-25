@@ -40,7 +40,7 @@ Your website is hosted on GitHub Pages (static hosting), which cannot save data 
 6. Copy the configuration code. It looks like:
 
 ```javascript
-const firebaseConfig = {
+const firebaseConfig = {git push -u origin main
   apiKey: "AIzaSy...",
   authDomain: "pakistangovjobs.firebaseapp.com",
   databaseURL: "https://pakistangovjobs-default-rtdb.firebaseio.com",

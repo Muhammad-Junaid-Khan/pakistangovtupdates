@@ -576,7 +576,8 @@ body {
 }
 
 /* RECENT ACTIVITY */
-.recent-activity {
+.recent-activity,
+.live-preview {
   background: #fff;
   padding: 1.5rem;
   border-radius: 12px;
@@ -584,7 +585,8 @@ body {
   box-shadow: var(--shadow);
 }
 
-.recent-activity h3 {
+.recent-activity h3,
+.live-preview h3 {
   margin: 0 0 1rem;
   color: var(--blue-dark);
 }

@@ -125,6 +125,12 @@
               <h3>Recently Published</h3>
               <div id="recentList" class="activity-list">Loading...</div>
             </div>
+
+            <!-- Live Preview -->
+            <div class="live-preview">
+              <h3>Live CMS Preview</h3>
+              <div id="previewList" class="activity-list">Loading preview...</div>
+            </div>
           </div>
         </section>
 
@@ -702,30 +708,36 @@ Scholarships 2026</textarea>
   <div id="toast" class="toast"></div>
 
   <!-- Firebase for cross-device data sync -->
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js"></script>
+    <!-- Success/Error Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase FIXED VERSION -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
   <script>
-    // Firebase Configuration - UPDATE WITH YOUR CONFIG
+    // Firebase Configuration
     const firebaseConfig = {
-  apiKey: "AIzaSyBf7anqGE2v8VbmjcwsuOE34RS9IsAQgAI",
-  authDomain: "pakistangovjobs-d9cc0.firebaseapp.com",
-  databaseURL: "https://pakistangovjobs-d9cc0-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "pakistangovjobs-d9cc0",
-  storageBucket: "pakistangovjobs-d9cc0.firebasestorage.app",
-  messagingSenderId: "443901497043",
-  appId: "1:443901497043:web:0370688fdba8e03e584e26"
-};
-    
-    // Initialize Firebase if config is valid
-    if (firebaseConfig.projectId && firebaseConfig.projectId !== 'pakistangovjobs') {
-      firebase.initializeApp(firebaseConfig);
-      window.firebaseReady = true;
-    } else {
-      console.warn('Firebase not configured. To enable cross-device sync:\\n1. Create Firebase project at https://console.firebase.google.com\\n2. Enable Realtime Database\\n3. Update firebaseConfig in admin/index.html');
-      window.firebaseReady = false;
-    }
+      apiKey: "AIzaSyBf7anqGE2v8VbmjcwsuOE34RS9IsAQgAI",
+      authDomain: "pakistangovjobs-d9cc0.firebaseapp.com",
+      databaseURL: "https://pakistangovjobs-d9cc0-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "pakistangovjobs-d9cc0",
+      storageBucket: "pakistangovjobs-d9cc0.firebasestorage.app",
+      messagingSenderId: "443901497043",
+      appId: "1:443901497043:web:0370688fdba8e03e584e26"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Global Database Access
+    window.database = firebase.database();
+    window.firebaseReady = true;
+
+    console.log("✅ Firebase Connected Successfully");
   </script>
 
+  <!-- Admin JS -->
   <script src="admin.js"></script>
 </body>
 </html>

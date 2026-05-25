@@ -30,18 +30,21 @@ window.dbUtils = {
     }
   },
   async addMessage(message) {
-    // Also save to Firebase for admin panel viewing
+    const payload = { ...message, timestamp: new Date().toISOString() };
     if (window.firebaseReady) {
       try {
         const msgs = await this.getData('messages') || [];
-        msgs.push({ ...message, timestamp: new Date().toISOString() });
+        msgs.push(payload);
         await this.saveData('messages', msgs);
       } catch (e) {
         console.error('Error saving message:', e);
+        const messages = JSON.parse(localStorage.getItem('cms_messages') || '[]');
+        messages.push(payload);
+        localStorage.setItem('cms_messages', JSON.stringify(messages));
       }
     } else {
       const messages = JSON.parse(localStorage.getItem('cms_messages') || '[]');
-      messages.push({ ...message, timestamp: new Date().toISOString() });
+      messages.push(payload);
       localStorage.setItem('cms_messages', JSON.stringify(messages));
     }
   }
@@ -118,21 +121,35 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(categoryGrid){categoryGrid.innerHTML=categories.map(c=>`<a class="card" href="categories.html#${c.anchor}"><h3>${c.name}</h3></a>`).join('');}
   if(filterPanel){renderCategoryButtons();}
 
-  fetch('data/jobs.json').then(r=>r.json()).then(data=>{
+  const loadCmsData = async (path, fallbackUrl) => {
+    const cloudData = await dbUtils.getData(path);
+    if (Array.isArray(cloudData) && cloudData.length > 0) {
+      return cloudData;
+    }
+    try {
+      const response = await fetch(fallbackUrl);
+      return await response.json();
+    } catch (error) {
+      console.warn(`Unable to load ${path} from fallback`, error);
+      return [];
+    }
+  };
+
+  loadCmsData('cms_jobs', 'data/jobs.json').then(data=>{
     jobsData=data;
     renderCards(data,jobsList,'job');
     if(jobsAll) renderCards(data,jobsAll,'job');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(jobsList) jobsList.innerHTML='<p class="muted">Jobs unavailable</p>'});
 
-  fetch('data/schemes.json').then(r=>r.json()).then(data=>{
+  loadCmsData('cms_schemes', 'data/schemes.json').then(data=>{
     schemesData=data;
     renderCards(data,schemesList,'scheme');
     if(schemesAll) renderCards(data,schemesAll,'scheme');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(schemesList) schemesList.innerHTML='<p class="muted">Schemes unavailable</p>'});
 
-  fetch('data/posts.json').then(r=>r.json()).then(data=>{
+  loadCmsData('cms_posts', 'data/posts.json').then(data=>{
     renderFeaturedPosts(data);
     if(blogList) renderBlogList(data);
   }).catch(()=>{if(featuredPostsContainer) featuredPostsContainer.innerHTML='<p class="muted">Featured content unavailable.</p>'; if(blogList) blogList.innerHTML='<p class="muted">Blog posts unavailable.</p>'});
@@ -161,17 +178,22 @@ document.addEventListener('DOMContentLoaded',()=>{
       // Save via dbUtils (Firebase + localStorage fallback)
       dbUtils.addMessage(payload);
       
-      // Try to send via EmailJS
-      emailjs.send('service_YOUR_SERVICE', 'template_YOUR_TEMPLATE', payload)
-        .then(()=>{
-          showContactMessage('Message sent successfully! We will contact you soon.','success');
-          contactForm.reset();
-        })
-        .catch(err=>{
-          console.log('EmailJS error (using localStorage backup):', err);
-          showContactMessage('Message received! We will contact you at ' + payload.email, 'success');
-          contactForm.reset();
-        });
+      // Try to send via EmailJS if loaded
+      if (typeof emailjs !== 'undefined' && typeof emailjs.send === 'function') {
+        emailjs.send('service_YOUR_SERVICE', 'template_YOUR_TEMPLATE', payload)
+          .then(()=>{
+            showContactMessage('Message sent successfully! We will contact you soon.','success');
+            contactForm.reset();
+          })
+          .catch(err=>{
+            console.log('EmailJS error (using local/cache backup):', err);
+            showContactMessage('Message received! We will contact you at ' + payload.email, 'success');
+            contactForm.reset();
+          });
+      } else {
+        showContactMessage('Message received! Contact saved locally and will be synced if Firebase is configured.','success');
+        contactForm.reset();
+      }
     });
   }
 
@@ -245,7 +267,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!resultsEl) return;
     const normalized=query.trim().toLowerCase();
     if(!normalized){resultsEl.innerHTML='<p class="muted">Enter a keyword to search jobs, schemes or guides.</p>';return;}
-    Promise.all([fetch('data/jobs.json').then(r=>r.json()),fetch('data/schemes.json').then(r=>r.json()),fetch('data/posts.json').then(r=>r.json())]).then(([jobs,schemes,posts])=>{
+    Promise.all([
+      loadCmsData('cms_jobs', 'data/jobs.json'),
+      loadCmsData('cms_schemes', 'data/schemes.json'),
+      loadCmsData('cms_posts', 'data/posts.json')
+    ]).then(([jobs,schemes,posts])=>{
       const pool=[...jobs,...schemes,...posts];
       const results=pool.filter(item=>((item.title||'')+' '+(item.excerpt||'')+' '+(item.content||'')).toLowerCase().includes(normalized));
       if(results.length===0){resultsEl.innerHTML='<p class="muted">No results found.</p>';return;}

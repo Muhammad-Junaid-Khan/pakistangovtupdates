@@ -3,35 +3,45 @@
 
 // Firebase Utility for Admin Panel
 window.adminDB = {
+  _getLocalKey(path) {
+    return path === 'messages' ? 'cms_messages' : path;
+  },
+
   async saveData(path, data) {
+    const localKey = this._getLocalKey(path);
     if (!window.firebaseReady) {
       console.log('Firebase not configured - saving to localStorage only');
-      localStorage.setItem(path, JSON.stringify(data));
+      localStorage.setItem(localKey, JSON.stringify(data));
       return false;
     }
     try {
       await firebase.database().ref(path).set(data);
-      localStorage.setItem(path, JSON.stringify(data)); // Also backup locally
+      localStorage.setItem(localKey, JSON.stringify(data)); // Also backup locally
       return true;
     } catch (e) {
       console.error('Firebase save error:', e);
-      localStorage.setItem(path, JSON.stringify(data));
+      localStorage.setItem(localKey, JSON.stringify(data));
       return false;
     }
   },
   async getData(path) {
+    const localKey = this._getLocalKey(path);
     if (!window.firebaseReady) {
-      const cached = localStorage.getItem(path);
+      const cached = localStorage.getItem(localKey);
       return cached ? JSON.parse(cached) : null;
     }
     try {
       const snapshot = await firebase.database().ref(path).get();
       const data = snapshot.val();
-      if (data) localStorage.setItem(path, JSON.stringify(data)); // Update cache
-      return data || null;
+      if (data) {
+        localStorage.setItem(localKey, JSON.stringify(data)); // Update cache
+        return data;
+      }
+      const cached = localStorage.getItem(localKey);
+      return cached ? JSON.parse(cached) : null;
     } catch (e) {
       console.error('Firebase read error:', e);
-      const cached = localStorage.getItem(path);
+      const cached = localStorage.getItem(localKey);
       return cached ? JSON.parse(cached) : null;
     }
   }
@@ -229,9 +239,16 @@ class AdminCMS {
     const form = document.getElementById(formId);
     const formData = new FormData(form);
     
-    // Convert to object
-    const data = Object.fromEntries(formData);
-    
+    // Convert to object and sanitize files for JSON storage
+    const data = {};
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        data[`${key}Name`] = value.name || '';
+      } else {
+        data[key] = value;
+      }
+    }
+
     // Generate slug
     data.slug = this.generateSlug(data.title);
     
@@ -252,6 +269,7 @@ class AdminCMS {
     
     // Reload list
     this.loadContentList(type);
+    this.renderPreview();
     await this.updateStats();
   }
 
@@ -301,6 +319,34 @@ class AdminCMS {
     `).join('');
   }
 
+  renderPreview() {
+    const previewContainer = document.getElementById('previewList');
+    if (!previewContainer) return;
+
+    const previewItems = [
+      ...this.data.jobs.map(item => ({ ...item, type: 'Job' })),
+      ...this.data.schemes.map(item => ({ ...item, type: 'Scheme' })),
+      ...this.data.courses.map(item => ({ ...item, type: 'Course' })),
+      ...this.data.scholarships.map(item => ({ ...item, type: 'Scholarship' })),
+      ...this.data.posts.map(item => ({ ...item, type: 'Post' }))
+    ]
+      .filter(item => item && item.title)
+      .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
+      .slice(0, 5);
+
+    if (previewItems.length === 0) {
+      previewContainer.innerHTML = '<p class="muted">No preview items yet.</p>';
+      return;
+    }
+
+    previewContainer.innerHTML = previewItems.map(item => `
+      <div class="preview-item">
+        <strong>${item.title}</strong>
+        <p class="muted">${item.type} • ${item.publishDate ? new Date(item.publishDate).toLocaleDateString() : 'No date'}</p>
+      </div>
+    `).join('');
+  }
+
   editItem(type, index) {
     const item = this.data[type + 's'][index];
     const formId = type + 'Form';
@@ -327,6 +373,7 @@ class AdminCMS {
       this.data[type + 's'].splice(index, 1);
       await adminDB.saveData('cms_' + type + 's', this.data[type + 's']);
       this.loadContentList(type);
+      this.renderPreview();
       await this.updateStats();
       this.showToast('Item deleted successfully', 'success');
     }
@@ -370,8 +417,9 @@ class AdminCMS {
     this.loadContentList('scholarship');
     this.loadContentList('post');
 
-    // Load messages and update stats
+    // Load messages, preview and update stats
     await this.loadMessages();
+    this.renderPreview();
     await this.updateStats();
   }
 
@@ -436,6 +484,7 @@ class AdminCMS {
     const messages = (await adminDB.getData('messages') || []).filter((_, i) => i !== index);
     await adminDB.saveData('messages', messages);
     await this.loadMessages();
+    this.renderPreview();
     await this.updateStats();
   }
 
