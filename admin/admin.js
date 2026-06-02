@@ -343,9 +343,28 @@ class AdminCMS {
         return;
       }
 
-      if (!form.checkValidity()) {
-        this.showToast('❌ Please fill all required fields', 'error');
-        form.reportValidity();
+      // Disable native HTML validation (can block when controls are hidden)
+      form.noValidate = true;
+
+      // Custom required-field validation to avoid "not focusable" errors
+      const requiredFields = [
+        'title','department','category','province','city','lastDate',
+        'education','ageLimit','eligibility','howToApply','applyLink',
+        'seoTitle','seoDescription','focusKeyword'
+      ];
+
+      const fdCheck = new FormData(form);
+      const missing = [];
+      for (const name of requiredFields) {
+        const v = fdCheck.get(name);
+        if (v === null || (typeof v === 'string' && v.trim() === '')) missing.push(name);
+      }
+      if (missing.length) {
+        this.showToast('❌ Please fill required fields: ' + missing.join(', '), 'error');
+        const first = form.querySelector(`[name="${missing[0]}"]`);
+        if (first && typeof first.focus === 'function') {
+          try { first.focus(); } catch (e) {}
+        }
         return;
       }
 
