@@ -1,6 +1,76 @@
 // Admin Dashboard JavaScript
 // CMS System for Pakistan Govt Updates
 
+// IndexedDB for efficient image storage (bypasses localStorage quota)
+window.imageDB = {
+  dbName: 'PakistanGovtUpdatesImages',
+  storeName: 'images',
+  
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName, { keyPath: 'id' });
+        }
+      };
+    });
+  },
+  
+  async saveImage(id, blob) {
+    try {
+      const db = await this.init();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        const store = tx.objectStore(this.storeName);
+        const request = store.put({ id, blob, timestamp: Date.now() });
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(id);
+      });
+    } catch (e) {
+      console.warn('IndexedDB save failed:', e);
+      return null;
+    }
+  },
+  
+  async getImage(id) {
+    try {
+      const db = await this.init();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const store = tx.objectStore(this.storeName);
+        const request = store.get(id);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result?.blob || null);
+      });
+    } catch (e) {
+      console.warn('IndexedDB read failed:', e);
+      return null;
+    }
+  },
+  
+  async deleteImage(id) {
+    try {
+      const db = await this.init();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readwrite');
+        const store = tx.objectStore(this.storeName);
+        const request = store.delete(id);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(true);
+      });
+    } catch (e) {
+      console.warn('IndexedDB delete failed:', e);
+      return false;
+    }
+  }
+};
+
 // Firebase Utility for Admin Panel
 window.adminDB = {
   _getLocalKey(path) {
@@ -263,53 +333,82 @@ class AdminCMS {
   }
 
   async submitForm(type) {
-    const formId = type + 'Form';
-    const form = document.getElementById(formId);
-    const formData = new FormData(form);
-
-    const data = {};
-    const filePromises = [];
-
-    for (const [key, value] of formData.entries()) {
-      const normalizedKey = key.endsWith('[]') ? key.slice(0, -2) : key;
-
-      if (value instanceof File && value.name) {
-        const promise = this.readFileAsDataURL(value).then((dataUrl) => {
-          data[`${normalizedKey}Name`] = value.name;
-          if (dataUrl) {
-            data[`${normalizedKey}Data`] = dataUrl;
-            data[normalizedKey] = dataUrl;
-          }
-        });
-        filePromises.push(promise);
-      } else if (key.endsWith('[]')) {
-        data[normalizedKey] = Array.isArray(data[normalizedKey]) ? data[normalizedKey] : [];
-        data[normalizedKey].push(value);
-      } else {
-        data[normalizedKey] = value;
+    try {
+      const formId = type + 'Form';
+      const form = document.getElementById(formId);
+      
+      if (!form) {
+        console.error(`Form not found: ${formId}`);
+        this.showToast('❌ Form not found', 'error');
+        return;
       }
+
+      if (!form.checkValidity()) {
+        this.showToast('❌ Please fill all required fields', 'error');
+        form.reportValidity();
+        return;
+      }
+
+      const formData = new FormData(form);
+      const data = {};
+      const filePromises = [];
+
+      for (const [key, value] of formData.entries()) {
+        const normalizedKey = key.endsWith('[]') ? key.slice(0, -2) : key;
+
+        if (value instanceof File && value.name) {
+          // Store file in IndexedDB to avoid localStorage quota issues
+          const promise = (async () => {
+            const imageId = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            data[`${normalizedKey}Name`] = value.name;
+            data[`${normalizedKey}Type`] = value.type;
+            data[`${normalizedKey}Id`] = imageId;
+            
+            try {
+              await imageDB.saveImage(imageId, value);
+              console.log(`✅ Stored ${normalizedKey} in IndexedDB: ${imageId}`);
+            } catch (e) {
+              console.error('IndexedDB storage error:', e);
+              this.showToast(`⚠️ Image storage warning: ${e.message}`, 'error');
+            }
+          }).call(this);
+          filePromises.push(promise);
+        } else if (key.endsWith('[]')) {
+          data[normalizedKey] = Array.isArray(data[normalizedKey]) ? data[normalizedKey] : [];
+          if (value) data[normalizedKey].push(value);
+        } else if (value) {
+          data[normalizedKey] = value;
+        }
+      }
+
+      await Promise.all(filePromises);
+
+      data.slug = this.generateSlug(data.title);
+      data.publishDate = new Date().toISOString();
+      data.id = Date.now().toString();
+
+      if (!this.data[type + 's']) {
+        this.data[type + 's'] = [];
+      }
+
+      this.data[type + 's'].push(data);
+
+      const saved = await adminDB.saveData('cms_' + type + 's', this.data[type + 's']);
+
+      if (saved) {
+        this.showToast(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} published to Firebase!`, 'success');
+      } else {
+        this.showToast(`💾 ${type.charAt(0).toUpperCase() + type.slice(1)} saved locally!`, 'success');
+      }
+
+      form.reset();
+      this.loadContentList(type);
+      this.renderPreview();
+      await this.updateStats();
+    } catch (error) {
+      console.error('Submit error:', error);
+      this.showToast(`❌ Error: ${error.message}`, 'error');
     }
-
-    await Promise.all(filePromises);
-
-    data.slug = this.generateSlug(data.title);
-    data.publishDate = new Date().toISOString();
-    data.id = Date.now().toString();
-
-    this.data[type + 's'].push(data);
-
-    const saved = await adminDB.saveData('cms_' + type + 's', this.data[type + 's']);
-
-    if (saved) {
-      this.showToast(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} published to Firebase!`, 'success');
-    } else {
-      this.showToast(`💾 ${type.charAt(0).toUpperCase() + type.slice(1)} saved locally!`, 'success');
-    }
-
-    form.reset();
-    this.loadContentList(type);
-    this.renderPreview();
-    await this.updateStats();
   }
 
   async readFileAsDataURL(file) {

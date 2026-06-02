@@ -1,3 +1,47 @@
+// IndexedDB Image Retrieval for Public Site
+window.imageDB = {
+  dbName: 'PakistanGovtUpdatesImages',
+  storeName: 'images',
+  
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName, { keyPath: 'id' });
+        }
+      };
+    });
+  },
+  
+  async getImage(id) {
+    try {
+      const db = await this.init();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, 'readonly');
+        const store = tx.objectStore(this.storeName);
+        const request = store.get(id);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const result = request.result;
+          if (result && result.blob) {
+            const url = URL.createObjectURL(result.blob);
+            resolve(url);
+          } else {
+            resolve(null);
+          }
+        };
+      });
+    } catch (e) {
+      console.warn('IndexedDB read failed:', e);
+      return null;
+    }
+  }
+};
+
 // Firebase Utility Functions
 window.dbUtils = {
   _normalizeArray(data) {
@@ -157,31 +201,31 @@ document.addEventListener('DOMContentLoaded',()=>{
     }
   };
 
-  loadCmsData('cms_jobs', 'data/jobs.json').then(data=>{
+  loadCmsData('cms_jobs', 'data/jobs.json').then(async data=>{
     jobsData=data;
-    renderCards(data,jobsList,'job');
-    if(jobsAll) renderCards(data,jobsAll,'job');
+    await renderCards(data,jobsList,'job');
+    if(jobsAll) await renderCards(data,jobsAll,'job');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(jobsList) jobsList.innerHTML='<p class="muted">Jobs unavailable</p>'});
 
-  loadCmsData('cms_schemes', 'data/schemes.json').then(data=>{
+  loadCmsData('cms_schemes', 'data/schemes.json').then(async data=>{
     schemesData=data;
-    renderCards(data,schemesList,'scheme');
-    if(schemesAll) renderCards(data,schemesAll,'scheme');
+    await renderCards(data,schemesList,'scheme');
+    if(schemesAll) await renderCards(data,schemesAll,'scheme');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(schemesList) schemesList.innerHTML='<p class="muted">Schemes unavailable</p>'});
 
-  loadCmsData('cms_courses', 'data/courses.json').then(data=>{
+  loadCmsData('cms_courses', 'data/courses.json').then(async data=>{
     coursesData=data;
-    if(coursesList) renderCards(data,coursesList,'course');
-    if(coursesAll) renderCards(data,coursesAll,'course');
+    if(coursesList) await renderCards(data,coursesList,'course');
+    if(coursesAll) await renderCards(data,coursesAll,'course');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(coursesList) coursesList.innerHTML='<p class="muted">Courses unavailable</p>'});
 
-  loadCmsData('cms_scholarships', 'data/scholarships.json').then(data=>{
+  loadCmsData('cms_scholarships', 'data/scholarships.json').then(async data=>{
     scholarshipsData=data;
-    if(scholarshipsList) renderCards(data,scholarshipsList,'scholarship');
-    if(scholarshipsAll) renderCards(data,scholarshipsAll,'scholarship');
+    if(scholarshipsList) await renderCards(data,scholarshipsList,'scholarship');
+    if(scholarshipsAll) await renderCards(data,scholarshipsAll,'scholarship');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(scholarshipsList) scholarshipsList.innerHTML='<p class="muted">Scholarships unavailable</p>'});
 
@@ -274,28 +318,28 @@ document.addEventListener('DOMContentLoaded',()=>{
     const buttons=['all',...categories.map(c=>c.name)];
     filterPanel.innerHTML=buttons.map(c=>`<button type="button" class="filter-btn" data-category="${c.toLowerCase()}">${c}</button>`).join('');
     filterPanel.querySelectorAll('.filter-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
+      btn.addEventListener('click', async ()=>{
         document.querySelectorAll('.filter-btn').forEach(el=>el.classList.remove('active'));
         btn.classList.add('active');
-        applyCategoryFilter(btn.dataset.category);
+        await applyCategoryFilter(btn.dataset.category);
       });
     });
     const first=filterPanel.querySelector('.filter-btn');
     if(first) first.classList.add('active');
   }
 
-  function applyCategoryFilter(category){
+  async function applyCategoryFilter(category){
     if(!jobsAll||!schemesAll) return;
     const normalized=category.toLowerCase();
     if(normalized==='all'){
-      renderCards(jobsData,jobsAll,'job');
-      renderCards(schemesData,schemesAll,'scheme');
+      await renderCards(jobsData,jobsAll,'job');
+      await renderCards(schemesData,schemesAll,'scheme');
       return;
     }
     const filteredJobs=jobsData.filter(item=>String(item.category||'').toLowerCase()===normalized);
     const filteredSchemes=schemesData.filter(item=>String(item.category||'').toLowerCase()===normalized);
-    renderCards(filteredJobs,jobsAll,'job');
-    renderCards(filteredSchemes,schemesAll,'scheme');
+    await renderCards(filteredJobs,jobsAll,'job');
+    await renderCards(filteredSchemes,schemesAll,'scheme');
   }
 
   function renderSearchResults(query){
@@ -315,20 +359,54 @@ document.addEventListener('DOMContentLoaded',()=>{
     }).catch(()=>{resultsEl.innerHTML='<p class="muted">Search service unavailable.</p>';});
   }
 
-  function loadPost(id){
-    Promise.all([
-      loadCmsData('cms_jobs','../data/jobs.json'),
-      loadCmsData('cms_schemes','../data/schemes.json'),
-      loadCmsData('cms_courses','../data/courses.json'),
-      loadCmsData('cms_scholarships','../data/scholarships.json'),
-      loadCmsData('cms_posts','../data/posts.json')
-    ]).then(([jobs,schemes,courses,scholarships,posts])=>{
+  async function loadPost(id){
+    try {
+      const [jobs,schemes,courses,scholarships,posts] = await Promise.all([
+        loadCmsData('cms_jobs','../data/jobs.json'),
+        loadCmsData('cms_schemes','../data/schemes.json'),
+        loadCmsData('cms_courses','../data/courses.json'),
+        loadCmsData('cms_scholarships','../data/scholarships.json'),
+        loadCmsData('cms_posts','../data/posts.json')
+      ]);
+      
       const pool=[...(Array.isArray(jobs)?jobs:[]),...(Array.isArray(schemes)?schemes:[]),...(Array.isArray(courses)?courses:[]),...(Array.isArray(scholarships)?scholarships:[]),...(Array.isArray(posts)?posts:[])];
       const item=pool.find(entry=>entry.id===id||entry.slug===id||entry.title===id);
-      if(!item){document.getElementById('postTitle').textContent='Content not found';document.getElementById('postBody').innerHTML='';return;}
-      const imageUrl = item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
-      const imageHtml = imageUrl ? `<div class="post-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.title)}"></div>` : '';
+      
+      if(!item){
+        document.getElementById('postTitle').textContent='Content not found';
+        document.getElementById('postBody').innerHTML='';
+        return;
+      }
+      
+      // Handle image retrieval from IndexedDB or fallback to data URL
+      let imageUrl = null;
+      let imageType = null;
+      
+      if (item.detailImageId) {
+        imageUrl = await imageDB.getImage(item.detailImageId);
+        imageType = item.detailImageType || 'image/jpeg';
+      } else if (item.imageId) {
+        imageUrl = await imageDB.getImage(item.imageId);
+        imageType = item.imageType || 'image/jpeg';
+      } else {
+        imageUrl = item.detailImage || item.detailImageData || item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
+        imageType = item.detailImageType || item.imageType || 'image/jpeg';
+      }
+      
+      // Create HTML for image or PDF
+      let imageHtml = '';
+      if (imageUrl) {
+        if (imageType && imageType.includes('pdf')) {
+          // PDF file - use embed viewer
+          imageHtml = `<div class="post-file pdf-viewer"><embed src="${escapeHtml(imageUrl)}" type="application/pdf" width="100%" height="600px"></div>`;
+        } else {
+          // Image file - use img tag
+          imageHtml = `<div class="post-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.title)}"></div>`;
+        }
+      }
+      
       document.getElementById('postTitle').textContent=item.title;
+      
       const metaParts=[];
       if(item.date) metaParts.push(item.date);
       if(item.lastDate) metaParts.push(item.lastDate);
@@ -336,6 +414,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(item.location) metaParts.push(item.location);
       if(item.author) metaParts.push(item.author);
       document.getElementById('postMeta').textContent=metaParts.join(' • ');
+      
       let bodyHtml = imageHtml;
       if(item.content){
         bodyHtml += item.content;
@@ -357,10 +436,15 @@ document.addEventListener('DOMContentLoaded',()=>{
         }
       }
       document.getElementById('postBody').innerHTML=bodyHtml;
+      
       const schema={"@context":"https://schema.org","@type":"Article","headline":item.title,"datePublished":item.date||item.publishDate||new Date().toISOString(),"author":{"@type":"Person","name":item.author||'PakistanGovtUpdates'}};
       const schemaEl=document.getElementById('postSchema');
       if(schemaEl) schemaEl.textContent=JSON.stringify(schema);
-    }).catch(()=>{document.getElementById('postTitle').textContent='Unable to load content.';document.getElementById('postBody').innerHTML='';});
+    } catch(error) {
+      console.error('Error loading post:', error);
+      document.getElementById('postTitle').textContent='Unable to load content.';
+      document.getElementById('postBody').innerHTML='';
+    }
   }
 
   function escapeHtml(text){
@@ -437,14 +521,22 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   // Enhanced renderCards with SEO
-  function renderCards(items,container,type){
+  async function renderCards(items,container,type){
     if(!container||!Array.isArray(items)) return;
     if(items.length===0){container.innerHTML='<p class="muted">No items found.</p>';return;}
     container.innerHTML='';
     const limit = container.id.includes('All') ? items.length : 8;
-    items.slice(0, limit).forEach(item=>{
+    
+    for (const item of items.slice(0, limit)) {
+      // Get image URL - check IndexedDB first for imageId, then fallback to existing formats
+      let imageUrl = null;
+      if (item.imageId) {
+        imageUrl = await imageDB.getImage(item.imageId);
+      } else {
+        imageUrl = item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
+      }
+      
       const article=document.createElement('article');
-      const imageUrl = item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
       article.className = imageUrl ? 'card card-has-image' : 'card';
       const title=`<h3>${escapeHtml(item.title)}</h3>`;
       const imageHtml = imageUrl ? `<div class="card-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.title)}"></div>` : '';
@@ -458,7 +550,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       const btnHtml = buttons.join(' ');
       article.innerHTML=`${imageHtml}<div class="card-body"><div>${title}${meta}${excerpt}</div><p>${btnHtml}</p></div>`;
       container.appendChild(article);
-    });
+    }
   }
 });
 
