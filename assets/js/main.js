@@ -378,25 +378,28 @@ document.addEventListener('DOMContentLoaded',()=>{
         return;
       }
       
-      // Handle image retrieval from IndexedDB or fallback to data URL
-      let imageUrl = null;
-      let imageType = null;
-      
-      if (item.detailImageId) {
-        imageUrl = await imageDB.getImage(item.detailImageId);
-        imageType = item.detailImageType || 'image/jpeg';
-      } else if (item.imageId) {
-        imageUrl = await imageDB.getImage(item.imageId);
-        imageType = item.imageType || 'image/jpeg';
-      } else {
-        imageUrl = item.detailImage || item.detailImageData || item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
-        imageType = item.detailImageType || item.imageType || 'image/jpeg';
+      // Prefer public URL fields if available (uploaded to Firebase Storage), else try IndexedDB blobs, then fallbacks
+      let imageUrl = item.detailImageUrl || item.imageUrl || null;
+      let imageType = item.detailImageType || item.imageType || null;
+
+      if (!imageUrl) {
+        if (item.detailImageId) {
+          imageUrl = await imageDB.getImage(item.detailImageId);
+          imageType = imageType || item.detailImageType || 'image/jpeg';
+        } else if (item.imageId) {
+          imageUrl = await imageDB.getImage(item.imageId);
+          imageType = imageType || item.imageType || 'image/jpeg';
+        } else {
+          imageUrl = item.detailImage || item.detailImageData || item.image || item.imageData || item.imagePath || item.image_src || null;
+          imageType = imageType || item.detailImageType || item.imageType || 'image/jpeg';
+        }
       }
-      
+
       // Create HTML for image or PDF
       let imageHtml = '';
       if (imageUrl) {
-        if (imageType && imageType.includes('pdf')) {
+        const isPdf = (imageType && imageType.includes('pdf')) || (typeof imageUrl === 'string' && imageUrl.toLowerCase().endsWith('.pdf'));
+        if (isPdf) {
           // PDF file - use embed viewer
           imageHtml = `<div class="post-file pdf-viewer"><embed src="${escapeHtml(imageUrl)}" type="application/pdf" width="100%" height="600px"></div>`;
         } else {
@@ -528,12 +531,14 @@ document.addEventListener('DOMContentLoaded',()=>{
     const limit = container.id.includes('All') ? items.length : 8;
     
     for (const item of items.slice(0, limit)) {
-      // Get image URL - check IndexedDB first for imageId, then fallback to existing formats
-      let imageUrl = null;
-      if (item.imageId) {
-        imageUrl = await imageDB.getImage(item.imageId);
-      } else {
-        imageUrl = item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
+      // Get image URL - prefer public URL first, then IndexedDB by imageId, then fallbacks
+      let imageUrl = item.imageUrl || null;
+      if (!imageUrl) {
+        if (item.imageId) {
+          imageUrl = await imageDB.getImage(item.imageId);
+        } else {
+          imageUrl = item.image || item.imageData || item.imagePath || item.image_src || null;
+        }
       }
       
       const article=document.createElement('article');

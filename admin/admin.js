@@ -357,13 +357,31 @@ class AdminCMS {
         const normalizedKey = key.endsWith('[]') ? key.slice(0, -2) : key;
 
         if (value instanceof File && value.name) {
-          // Store file in IndexedDB to avoid localStorage quota issues
+          // Upload to Firebase Storage when available and store public URL; also save to IndexedDB as backup
           const promise = (async () => {
             const imageId = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             data[`${normalizedKey}Name`] = value.name;
             data[`${normalizedKey}Type`] = value.type;
             data[`${normalizedKey}Id`] = imageId;
-            
+
+            // If Firebase is configured and storage is available, upload and get public URL
+            if (window.firebaseReady && firebase.storage) {
+              try {
+                const storageRef = firebase.storage().ref();
+                const fileRef = storageRef.child(`cms_media/${imageId}_${value.name}`);
+                const snapshot = await fileRef.put(value);
+                const url = await snapshot.ref.getDownloadURL();
+                data[`${normalizedKey}Url`] = url;
+                // Also set primary field to URL for frontend convenience
+                data[normalizedKey] = url;
+                console.log(`✅ Uploaded ${normalizedKey} to Firebase Storage: ${url}`);
+              } catch (e) {
+                console.error('Firebase Storage upload failed:', e);
+                this.showToast(`⚠️ Remote upload failed: ${e.message}`, 'error');
+              }
+            }
+
+            // Always save to IndexedDB as a local backup (fast local retrieval)
             try {
               await imageDB.saveImage(imageId, value);
               console.log(`✅ Stored ${normalizedKey} in IndexedDB: ${imageId}`);
