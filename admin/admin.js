@@ -7,6 +7,20 @@ window.adminDB = {
     return path === 'messages' ? 'cms_messages' : path;
   },
 
+  _normalizeArray(data) {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const keys = Object.keys(data);
+      const numericKeys = keys.filter(k => /^\d+$/.test(k));
+      if (numericKeys.length === keys.length && keys.length > 0) {
+        return numericKeys
+          .sort((a, b) => Number(a) - Number(b))
+          .map(key => data[key]);
+      }
+    }
+    return data;
+  },
+
   async saveData(path, data) {
     const localKey = this._getLocalKey(path);
     if (!window.firebaseReady) {
@@ -35,7 +49,8 @@ window.adminDB = {
     return new Promise((resolve) => {
       firebase.database().ref(path).once('value')
         .then((snapshot) => {
-          const data = snapshot.val();
+          const rawData = snapshot.val();
+          const data = this._normalizeArray(rawData);
           if (data) {
             localStorage.setItem(localKey, JSON.stringify(data));
             resolve(data);
@@ -192,6 +207,25 @@ class AdminCMS {
     document.getElementById('mediaFile').addEventListener('change', (e) => {
       this.handleMediaUpload(e);
     });
+
+    document.querySelectorAll('.file-upload').forEach(upload => {
+      const input = upload.querySelector('input[type="file"]');
+      if (!input) return;
+
+      // Make the visible upload box trigger the hidden file input.
+      upload.addEventListener('click', () => input.click());
+
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        let fileName = upload.querySelector('.file-name');
+        if (!fileName) {
+          fileName = document.createElement('p');
+          fileName.className = 'file-name';
+          upload.appendChild(fileName);
+        }
+        fileName.textContent = file ? `Selected file: ${file.name}` : 'Upload file';
+      });
+    });
   }
 
   switchSection(section) {
@@ -242,7 +276,10 @@ class AdminCMS {
       if (value instanceof File && value.name) {
         const promise = this.readFileAsDataURL(value).then((dataUrl) => {
           data[`${normalizedKey}Name`] = value.name;
-          if (dataUrl) data[`${normalizedKey}Data`] = dataUrl;
+          if (dataUrl) {
+            data[`${normalizedKey}Data`] = dataUrl;
+            data[normalizedKey] = dataUrl;
+          }
         });
         filePromises.push(promise);
       } else if (key.endsWith('[]')) {
@@ -295,8 +332,12 @@ class AdminCMS {
       .replace(/^-+|-+$/g, '');
   }
 
+  getContentListId(type) {
+    return `${type}sList`;
+  }
+
   loadContentList(type) {
-    const listId = type + 'List';
+    const listId = this.getContentListId(type);
     const container = document.getElementById(listId);
     if (!container) return;
 
@@ -381,6 +422,7 @@ class AdminCMS {
     }
 
     Object.keys(item).forEach(key => {
+      if (key === 'documents') return;
       const field = form.elements[key];
       if (field) {
         if (field.type === 'checkbox') {

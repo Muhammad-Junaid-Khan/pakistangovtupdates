@@ -1,5 +1,19 @@
 // Firebase Utility Functions
 window.dbUtils = {
+  _normalizeArray(data) {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      const keys = Object.keys(data);
+      const numericKeys = keys.filter(k => /^\d+$/.test(k));
+      if (numericKeys.length === keys.length && keys.length > 0) {
+        return numericKeys
+          .sort((a, b) => Number(a) - Number(b))
+          .map(key => data[key]);
+      }
+    }
+    return data;
+  },
+
   async saveData(path, data) {
     if (!window.firebaseReady) {
       console.log('Firebase not configured - saving to localStorage only');
@@ -22,7 +36,8 @@ window.dbUtils = {
     }
     try {
       const snapshot = await firebase.database().ref(path).get();
-      return snapshot.val() || null;
+      const rawData = snapshot.val();
+      return this._normalizeArray(rawData) || null;
     } catch (e) {
       console.error('Firebase read error:', e);
       const cached = localStorage.getItem(path);
@@ -64,9 +79,11 @@ const WHATSAPP_MESSAGE = 'Hello! I need guidance regarding application processes
 document.addEventListener('DOMContentLoaded',()=>{
   const jobsList=document.getElementById('jobsList');
   const schemesList=document.getElementById('schemesList');
+  const scholarshipsList=document.getElementById('scholarshipsList');
   const categoryGrid=document.getElementById('categoryGrid');
   const jobsAll=document.getElementById('jobsAll');
   const schemesAll=document.getElementById('schemesAll');
+  const scholarshipsAll=document.getElementById('scholarshipsAll');
   const blogList=document.getElementById('blogList');
   const filterPanel=document.getElementById('categoryFilter');
   const featuredPostsContainer=document.getElementById('featuredPosts');
@@ -77,6 +94,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const currentPath=window.location.pathname;
   let jobsData=[];
   let schemesData=[];
+  let scholarshipsData=[];
   
   // Initialize features
   initWhatsApp();
@@ -121,6 +139,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(categoryGrid){categoryGrid.innerHTML=categories.map(c=>`<a class="card" href="categories.html#${c.anchor}"><h3>${c.name}</h3></a>`).join('');}
   if(filterPanel){renderCategoryButtons();}
 
+  const coursesList=document.getElementById('coursesList');
+  const coursesAll=document.getElementById('coursesAll');
+  let coursesData=[];
+
   const loadCmsData = async (path, fallbackUrl) => {
     const cloudData = await dbUtils.getData(path);
     if (Array.isArray(cloudData) && cloudData.length > 0) {
@@ -148,6 +170,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(schemesAll) renderCards(data,schemesAll,'scheme');
     if(filterPanel) applyCategoryFilter('all');
   }).catch(()=>{if(schemesList) schemesList.innerHTML='<p class="muted">Schemes unavailable</p>'});
+
+  loadCmsData('cms_courses', 'data/courses.json').then(data=>{
+    coursesData=data;
+    if(coursesList) renderCards(data,coursesList,'course');
+    if(coursesAll) renderCards(data,coursesAll,'course');
+    if(filterPanel) applyCategoryFilter('all');
+  }).catch(()=>{if(coursesList) coursesList.innerHTML='<p class="muted">Courses unavailable</p>'});
+
+  loadCmsData('cms_scholarships', 'data/scholarships.json').then(data=>{
+    scholarshipsData=data;
+    if(scholarshipsList) renderCards(data,scholarshipsList,'scholarship');
+    if(scholarshipsAll) renderCards(data,scholarshipsAll,'scholarship');
+    if(filterPanel) applyCategoryFilter('all');
+  }).catch(()=>{if(scholarshipsList) scholarshipsList.innerHTML='<p class="muted">Scholarships unavailable</p>'});
 
   loadCmsData('cms_posts', 'data/posts.json').then(data=>{
     renderFeaturedPosts(data);
@@ -280,16 +316,51 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 
   function loadPost(id){
-    fetch('../data/posts.json').then(r=>r.json()).then(posts=>{
-      const post=posts.find(item=>item.id===id||item.slug===id||item.title===id);
-      if(!post){document.getElementById('postTitle').textContent='Post not found';return;}
-      document.getElementById('postTitle').textContent=post.title;
-      document.getElementById('postMeta').textContent=`${post.date||''} • ${post.author||'PakistanGovtUpdates'}`;
-      document.getElementById('postBody').innerHTML=post.content;
-      const schema={"@context":"https://schema.org","@type":"Article","headline":post.title,"datePublished":post.date,"author":{"@type":"Person","name":post.author||'PakistanGovtUpdates'}};
+    Promise.all([
+      loadCmsData('cms_jobs','../data/jobs.json'),
+      loadCmsData('cms_schemes','../data/schemes.json'),
+      loadCmsData('cms_courses','../data/courses.json'),
+      loadCmsData('cms_scholarships','../data/scholarships.json'),
+      loadCmsData('cms_posts','../data/posts.json')
+    ]).then(([jobs,schemes,courses,scholarships,posts])=>{
+      const pool=[...(Array.isArray(jobs)?jobs:[]),...(Array.isArray(schemes)?schemes:[]),...(Array.isArray(courses)?courses:[]),...(Array.isArray(scholarships)?scholarships:[]),...(Array.isArray(posts)?posts:[])];
+      const item=pool.find(entry=>entry.id===id||entry.slug===id||entry.title===id);
+      if(!item){document.getElementById('postTitle').textContent='Content not found';document.getElementById('postBody').innerHTML='';return;}
+      const imageUrl = item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
+      const imageHtml = imageUrl ? `<div class="post-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.title)}"></div>` : '';
+      document.getElementById('postTitle').textContent=item.title;
+      const metaParts=[];
+      if(item.date) metaParts.push(item.date);
+      if(item.lastDate) metaParts.push(item.lastDate);
+      if(item.city) metaParts.push(item.city);
+      if(item.location) metaParts.push(item.location);
+      if(item.author) metaParts.push(item.author);
+      document.getElementById('postMeta').textContent=metaParts.join(' • ');
+      let bodyHtml = imageHtml;
+      if(item.content){
+        bodyHtml += item.content;
+      } else {
+        if(item.excerpt) bodyHtml += `<p>${escapeHtml(item.excerpt)}</p>`;
+        if(item.eligibility) bodyHtml += `<h2>Eligibility</h2><p>${escapeHtml(item.eligibility)}</p>`;
+        if(item.howToApply) bodyHtml += `<h2>How to Apply</h2><p>${escapeHtml(item.howToApply)}</p>`;
+        if(item.applyProcess) bodyHtml += `<h2>Application Process</h2><p>${escapeHtml(item.applyProcess)}</p>`;
+        if(item.process) bodyHtml += `<h2>Registration Process</h2><p>${escapeHtml(item.process)}</p>`;
+        if(item.benefits) bodyHtml += `<h2>Benefits</h2><p>${escapeHtml(item.benefits)}</p>`;
+        if(item.institute) bodyHtml += `<h2>Institute</h2><p>${escapeHtml(item.institute)}</p>`;
+        if(item.duration) bodyHtml += `<h2>Duration</h2><p>${escapeHtml(item.duration)}</p>`;
+        if(item.country) bodyHtml += `<h2>Country</h2><p>${escapeHtml(item.country)}</p>`;
+        if(item.documents && Array.isArray(item.documents)) {
+          bodyHtml += `<h2>Required Documents</h2><ul>${item.documents.map(doc=>`<li>${escapeHtml(doc)}</li>`).join('')}</ul>`;
+        }
+        if(item.applyLink || item.link || item.apply) {
+          bodyHtml += `<p><a class="more-link" href="${item.applyLink||item.link||item.apply}" target="_blank" rel="noreferrer">Go to Official Link</a></p>`;
+        }
+      }
+      document.getElementById('postBody').innerHTML=bodyHtml;
+      const schema={"@context":"https://schema.org","@type":"Article","headline":item.title,"datePublished":item.date||item.publishDate||new Date().toISOString(),"author":{"@type":"Person","name":item.author||'PakistanGovtUpdates'}};
       const schemaEl=document.getElementById('postSchema');
       if(schemaEl) schemaEl.textContent=JSON.stringify(schema);
-    }).catch(()=>{document.getElementById('postTitle').textContent='Unable to load post.';});
+    }).catch(()=>{document.getElementById('postTitle').textContent='Unable to load content.';document.getElementById('postBody').innerHTML='';});
   }
 
   function escapeHtml(text){
@@ -373,17 +444,19 @@ document.addEventListener('DOMContentLoaded',()=>{
     const limit = container.id.includes('All') ? items.length : 8;
     items.slice(0, limit).forEach(item=>{
       const article=document.createElement('article');
-      article.className='card';
+      const imageUrl = item.image || item.imageData || item.imageUrl || item.imagePath || item.image_src;
+      article.className = imageUrl ? 'card card-has-image' : 'card';
       const title=`<h3>${escapeHtml(item.title)}</h3>`;
+      const imageHtml = imageUrl ? `<div class="card-image"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.title)}"></div>` : '';
       const meta=`<p class="muted">${item.lastDate ? new Date(item.lastDate).toLocaleDateString() : (item.publishDate ? new Date(item.publishDate).toLocaleDateString() : '')} ${item.city||item.location?`• ${escapeHtml(item.city||item.location)}`:''}</p>`;
-      const excerpt=`<p>${escapeHtml(item.excerpt||item.eligibility||item.summary||'')}</p>`;
+      const excerpt=`<p>${escapeHtml(item.excerpt||item.eligibility||item.summary||item.description||'')}</p>`;
       const buttons = [];
-      if(item.applyLink || item.link) {
-        buttons.push(`<a class="more-link" href="${item.applyLink || item.link}" target="_blank" rel="noreferrer">🔗 Official Link</a>`);
+      if(item.applyLink || item.link || item.apply) {
+        buttons.push(`<a class="more-link" href="${item.applyLink || item.link || item.apply}" target="_blank" rel="noreferrer">🔗 Official Link</a>`);
       }
       buttons.push(`<a class="more-link" href="blog/post-template.html?id=${encodeURIComponent(item.slug || item.id || item.title)}">📖 Details</a>`);
       const btnHtml = buttons.join(' ');
-      article.innerHTML=title+meta+excerpt+`<p>${btnHtml}</p>`;
+      article.innerHTML=`${imageHtml}<div class="card-body"><div>${title}${meta}${excerpt}</div><p>${btnHtml}</p></div>`;
       container.appendChild(article);
     });
   }
