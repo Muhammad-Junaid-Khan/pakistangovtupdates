@@ -44,6 +44,10 @@ window.imageDB = {
 
 // Firebase Utility Functions
 window.dbUtils = {
+  _getLocalKey(path) {
+    return path === 'messages' ? 'cms_messages' : path;
+  },
+
   _normalizeArray(data) {
     if (Array.isArray(data)) return data;
     if (data && typeof data === 'object') {
@@ -61,7 +65,7 @@ window.dbUtils = {
   async saveData(path, data) {
     if (!window.firebaseReady) {
       console.log('Firebase not configured - saving to localStorage only');
-      localStorage.setItem(path, JSON.stringify(data));
+      localStorage.setItem(this._getLocalKey(path), JSON.stringify(data));
       return false;
     }
     try {
@@ -69,13 +73,13 @@ window.dbUtils = {
       return true;
     } catch (e) {
       console.error('Firebase save error:', e);
-      localStorage.setItem(path, JSON.stringify(data));
+      localStorage.setItem(this._getLocalKey(path), JSON.stringify(data));
       return false;
     }
   },
   async getData(path) {
     if (!window.firebaseReady) {
-      const cached = localStorage.getItem(path);
+      const cached = localStorage.getItem(this._getLocalKey(path));
       return cached ? JSON.parse(cached) : null;
     }
     try {
@@ -84,7 +88,7 @@ window.dbUtils = {
       return this._normalizeArray(rawData) || null;
     } catch (e) {
       console.error('Firebase read error:', e);
-      const cached = localStorage.getItem(path);
+      const cached = localStorage.getItem(this._getLocalKey(path));
       return cached ? JSON.parse(cached) : null;
     }
   },
@@ -97,14 +101,16 @@ window.dbUtils = {
         await this.saveData('messages', msgs);
       } catch (e) {
         console.error('Error saving message:', e);
-        const messages = JSON.parse(localStorage.getItem('cms_messages') || '[]');
+        const localKey = this._getLocalKey('messages');
+        const messages = JSON.parse(localStorage.getItem(localKey) || '[]');
         messages.push(payload);
-        localStorage.setItem('cms_messages', JSON.stringify(messages));
+        localStorage.setItem(localKey, JSON.stringify(messages));
       }
     } else {
-      const messages = JSON.parse(localStorage.getItem('cms_messages') || '[]');
+      const localKey = this._getLocalKey('messages');
+      const messages = JSON.parse(localStorage.getItem(localKey) || '[]');
       messages.push(payload);
-      localStorage.setItem('cms_messages', JSON.stringify(messages));
+      localStorage.setItem(localKey, JSON.stringify(messages));
     }
   }
 };

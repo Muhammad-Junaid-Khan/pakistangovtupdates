@@ -772,13 +772,21 @@ Scholarships 2026</textarea>
     };
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-
-    // Global Database Access
-    window.database = firebase.database();
-    window.firebaseReady = true;
-
-    console.log("✅ Firebase Connected Successfully");
+    try {
+      firebase.initializeApp(firebaseConfig);
+      window.database = firebase.database();
+      window.firebaseReady = true;
+      window.firebaseStorageReady = window.location.protocol === 'https:';
+      if (!window.firebaseStorageReady) {
+        console.warn('⚠️ Firebase Storage disabled in non-secure environment. Files will be kept locally.');
+      }
+      console.log("✅ Firebase Connected Successfully");
+    } catch (e) {
+      console.warn("⚠️ Firebase initialization failed, using local storage fallback", e);
+      window.database = null;
+      window.firebaseReady = false;
+      window.firebaseStorageReady = false;
+    }
   </script>
 
   <!-- Admin JS -->

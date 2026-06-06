@@ -91,21 +91,42 @@ window.adminDB = {
     return data;
   },
 
+  _isQuotaError(error) {
+    return error && (
+      error.code === 22 ||
+      error.code === 1014 ||
+      error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+    );
+  },
+
   async saveData(path, data) {
     const localKey = this._getLocalKey(path);
+    const saveLocal = () => {
+      try {
+        localStorage.setItem(localKey, JSON.stringify(data));
+      } catch (e) {
+        if (this._isQuotaError(e)) {
+          console.warn('LocalStorage quota exceeded for', localKey);
+        } else {
+          console.error('LocalStorage save failed:', e);
+        }
+      }
+    };
+
     if (!window.firebaseReady) {
       console.log('Firebase not configured - saving to localStorage only');
-      localStorage.setItem(localKey, JSON.stringify(data));
+      saveLocal();
       return false;
     }
     try {
       await firebase.database().ref(path).set(data);
-      localStorage.setItem(localKey, JSON.stringify(data));
+      saveLocal();
       console.log('✅ Saved to Firebase:', path);
       return true;
     } catch (e) {
       console.error('Firebase save error:', e);
-      localStorage.setItem(localKey, JSON.stringify(data));
+      saveLocal();
       return false;
     }
   },
@@ -157,9 +178,44 @@ class AdminCMS {
   async init() {
     this.wrapper = document.getElementById('adminWrapper');
     this.checkAuth();
+    await this.cleanupLocalStorageData();
     this.setupEventListeners();
     await this.loadAllData();
+    this.loadSEOSettings();
     this.initCharts();
+  }
+
+  async cleanupLocalStorageData() {
+    const keys = ['cms_jobs', 'cms_schemes', 'cms_courses', 'cms_scholarships', 'cms_posts', 'cms_media'];
+    for (const key of keys) {
+      try {
+        const stored = localStorage.getItem(key);
+        if (!stored) continue;
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) continue;
+
+        let modified = false;
+        const cleaned = parsed.map(item => {
+          if (!item || typeof item !== 'object') return item;
+          const result = { ...item };
+          for (const prop in result) {
+            const value = result[prop];
+            if (typeof value === 'string' && value.startsWith('data:') && value.length > 1024) {
+              delete result[prop];
+              modified = true;
+            }
+          }
+          return result;
+        });
+
+        if (modified) {
+          localStorage.setItem(key, JSON.stringify(cleaned));
+          console.log(`🧹 Cleaned old data URL fields from ${key}`);
+        }
+      } catch (e) {
+        console.warn('Cleanup failed for', key, e);
+      }
+    }
   }
 
   checkAuth() {
@@ -334,6 +390,7 @@ class AdminCMS {
 
   async submitForm(type) {
     try {
+      console.log('Admin publish attempt:', type);
       const formId = type + 'Form';
       const form = document.getElementById(formId);
       
@@ -345,14 +402,15 @@ class AdminCMS {
 
       // Disable native HTML validation (can block when controls are hidden)
       form.noValidate = true;
+      const requiredFieldsByType = {
+        job: ['title','department','category','province','city','lastDate','education','ageLimit','eligibility','howToApply','applyLink','seoTitle','seoDescription','focusKeyword','image'],
+        scheme: ['title','department','category','eligibility','benefits','process','documents[]','deadline','link','seoTitle','seoDescription','image'],
+        course: ['title','institute','duration','eligibility','howToApply','category','deadline','link','seoTitle','seoDescription','image'],
+        scholarship: ['title','country','deadline','eligibility','applyProcess','documents[]','link','seoTitle','seoDescription','image'],
+        post: ['title','category','excerpt','body','seoTitle','seoDescription','focusKeyword','image']
+      };
 
-      // Custom required-field validation to avoid "not focusable" errors
-      const requiredFields = [
-        'title','department','category','province','city','lastDate',
-        'education','ageLimit','eligibility','howToApply','applyLink',
-        'seoTitle','seoDescription','focusKeyword'
-      ];
-
+      const requiredFields = requiredFieldsByType[type] || [];
       const fdCheck = new FormData(form);
       const missing = [];
       for (const name of requiredFields) {
@@ -383,8 +441,8 @@ class AdminCMS {
             data[`${normalizedKey}Type`] = value.type;
             data[`${normalizedKey}Id`] = imageId;
 
-            // If Firebase is configured and storage is available, upload and get public URL
-            if (window.firebaseReady && firebase.storage) {
+            // If Firebase Storage is configured and the page is secure, upload and get public URL
+            if (window.firebaseStorageReady && firebase.storage) {
               try {
                 const storageRef = firebase.storage().ref();
                 const fileRef = storageRef.child(`cms_media/${imageId}_${value.name}`);
@@ -395,14 +453,18 @@ class AdminCMS {
                 data[normalizedKey] = url;
                 console.log(`✅ Uploaded ${normalizedKey} to Firebase Storage: ${url}`);
               } catch (e) {
-                console.error('Firebase Storage upload failed:', e);
-                this.showToast(`⚠️ Remote upload failed: ${e.message}`, 'error');
+                console.warn('Firebase Storage upload skipped or failed:', e);
               }
+            } else {
+              console.warn('Firebase Storage upload disabled; storing local copy only.');
             }
 
             // Always save to IndexedDB as a local backup (fast local retrieval)
             try {
               await imageDB.saveImage(imageId, value);
+              if (!data[normalizedKey]) {
+                data[normalizedKey] = '';
+              }
               console.log(`✅ Stored ${normalizedKey} in IndexedDB: ${imageId}`);
             } catch (e) {
               console.error('IndexedDB storage error:', e);
@@ -472,6 +534,14 @@ class AdminCMS {
     return `${type}sList`;
   }
 
+  isExpiredItem(item) {
+    if (!item) return false;
+    const expirationDate = item.lastDate || item.deadline;
+    if (!expirationDate) return false;
+    const deadline = new Date(expirationDate);
+    return !Number.isNaN(deadline.getTime()) && deadline < new Date();
+  }
+
   loadContentList(type) {
     const listId = this.getContentListId(type);
     const container = document.getElementById(listId);
@@ -484,18 +554,25 @@ class AdminCMS {
       return;
     }
 
-    container.innerHTML = items.map((item, i) => `
-      <div class="list-item">
-        <div class="list-item-content">
-          <h4>${item.title}</h4>
-          <p>${item.publishDate ? new Date(item.publishDate).toLocaleDateString() : 'Not dated'}</p>
+    container.innerHTML = items.map((item, i) => {
+      const expired = this.isExpiredItem(item) && (type === 'job' || type === 'scheme');
+      const statusLabel = expired ? '<span class="status-badge expired">Expired</span>' : '';
+      return `
+        <div class="list-item">
+          <div class="list-item-content">
+            <div class="list-item-header">
+              <h4>${item.title}</h4>
+              ${statusLabel}
+            </div>
+            <p>${item.publishDate ? new Date(item.publishDate).toLocaleDateString() : 'Not dated'}</p>
+          </div>
+          <div class="list-item-actions">
+            <button class="edit-btn" onclick="cms.editItem('${type}', ${i})">✏️ Edit</button>
+            <button class="delete-btn" onclick="cms.deleteItem('${type}', ${i})">🗑️ Delete</button>
+          </div>
         </div>
-        <div class="list-item-actions">
-          <button class="edit-btn" onclick="cms.editItem('${type}', ${i})">✏️ Edit</button>
-          <button class="delete-btn" onclick="cms.deleteItem('${type}', ${i})">🗑️ Delete</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   renderPreview() {
@@ -674,6 +751,17 @@ class AdminCMS {
     `).join('');
   }
 
+  loadSEOSettings() {
+    const settings = JSON.parse(localStorage.getItem('cms_seo_settings') || '{}');
+    if (!settings) return;
+
+    if (settings.siteTitle) document.getElementById('siteTitle').value = settings.siteTitle;
+    if (settings.siteDesc) document.getElementById('siteDesc').value = settings.siteDesc;
+    if (settings.focusKeywords) document.getElementById('focusKeywords').value = settings.focusKeywords;
+    if (settings.gaId) document.getElementById('gaId').value = settings.gaId;
+    if (settings.adsenseId) document.getElementById('adsenseId').value = settings.adsenseId;
+  }
+
   async deleteMessage(index) {
     const messages = (await adminDB.getData('messages') || []).filter((_, i) => i !== index);
     await adminDB.saveData('messages', messages);
@@ -738,65 +826,66 @@ class AdminCMS {
 
   async handleMediaUpload(e) {
     const files = Array.from(e.target.files || []);
-    const gallery = document.getElementById('mediaGallery');
 
     for (const file of files) {
-      const dataUrl = await this.readFileAsDataURL(file);
       const itemData = {
         id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
         name: file.name,
         type: file.type,
-        size: file.size,
-        dataUrl
+        size: file.size
       };
       this.data.media.push(itemData);
+      await imageDB.saveImage(itemData.id, file);
       await adminDB.saveData('cms_media', this.data.media);
-
-      const item = document.createElement('div');
-      item.className = 'media-item';
-      item.dataset.mediaId = itemData.id;
-      item.innerHTML = `
-        <img src="${dataUrl}" alt="${file.name}">
-        <div class="media-item-actions">
-          <button type="button" onclick="cms.copyMediaUrl('${itemData.id}')">📋 Copy</button>
-          <button type="button" onclick="cms.deleteMedia(this)">🗑️ Delete</button>
-        </div>
-      `;
-      gallery.appendChild(item);
     }
 
-    this.renderMediaGallery();
+    await this.renderMediaGallery();
     this.showToast(`Uploaded ${files.length} media file(s)`, 'success');
   }
 
-  copyMediaUrl(id) {
+  async copyMediaUrl(id) {
     const item = this.data.media.find(media => media.id === id);
-    if (item?.dataUrl) {
-      navigator.clipboard.writeText(item.dataUrl);
+    let url = item?.dataUrl;
+    if (!url) {
+      const blob = await imageDB.getImage(id);
+      if (blob) {
+        url = URL.createObjectURL(blob);
+      }
+    }
+    if (url) {
+      navigator.clipboard.writeText(url);
       this.showToast('Media URL copied to clipboard', 'success');
     } else {
       this.showToast('Media URL not available', 'error');
     }
   }
 
-  renderMediaGallery() {
+  async renderMediaGallery() {
     const gallery = document.getElementById('mediaGallery');
     if (!gallery) return;
     gallery.innerHTML = '';
 
-    this.data.media.forEach(itemData => {
+    for (const itemData of this.data.media) {
+      let src = itemData.dataUrl;
+      if (!src) {
+        const blob = await imageDB.getImage(itemData.id);
+        if (blob) {
+          src = URL.createObjectURL(blob);
+        }
+      }
+
       const item = document.createElement('div');
       item.className = 'media-item';
       item.dataset.mediaId = itemData.id;
       item.innerHTML = `
-        <img src="${itemData.dataUrl}" alt="${itemData.name}">
+        ${src ? `<img src="${src}" alt="${itemData.name}">` : `<div class="media-placeholder">No preview available</div>`}
         <div class="media-item-actions">
           <button type="button" onclick="cms.copyMediaUrl('${itemData.id}')">📋 Copy</button>
           <button type="button" onclick="cms.deleteMedia(this)">🗑️ Delete</button>
         </div>
       `;
       gallery.appendChild(item);
-    });
+    }
   }
 
   async deleteMedia(btn) {
@@ -879,6 +968,7 @@ function saveSEOSettings() {
   };
 
   localStorage.setItem('cms_seo_settings', JSON.stringify(settings));
+  adminDB.saveData('cms_seo_settings', settings);
   cms.showToast('SEO settings saved successfully!', 'success');
 }
 
