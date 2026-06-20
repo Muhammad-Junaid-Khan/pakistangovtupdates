@@ -1,14 +1,5 @@
 [
   {
-    "id":"job-ppsc-maths",
-    "category":"PPSC Jobs",
-    "title":"PPSC Lecturer Mathematics",
-    "date":"2026-05-20",
-    "location":"Lahore",
-    "excerpt":"Punjab Public Service Commission has opened vacancies for Mathematics lecturers with detailed eligibility requirements.",
-    "apply":"https://ppsc.gop.pk/",
-    "content":"<p>Read the official advertisement and apply through the PPSC portal before the closing date.</p>"
-  {
     "id": "ppsc-lecturer-math-2026",
     "slug": "ppsc-lecturer-mathematics-jobs-2026",
     "title": "PPSC Lecturer Mathematics 2026",
@@ -22,7 +13,7 @@
     "ageLimit": "18-35 years",
     "salary": "TBD",
     "excerpt": "PPSC is hiring qualified Mathematics lecturers for multiple positions across Punjab. Apply online now!",
-    "howToApply": "1. Visit PPSC official website\\n2. Create account with CNIC\\n3. Fill application form\\n4. Submit required documents\\n5. Download admission slip",
+    "howToApply": "1. Visit PPSC official website\n2. Create account with CNIC\n3. Fill application form\n4. Submit required documents\n5. Download admission slip",
     "documents": ["CNIC", "Bachelor's Degree Certificate", "Domicile Certificate", "Character Certificate"],
     "applyLink": "https://www.ppsc.gop.pk",
     "image": "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=900&q=80",
@@ -55,56 +46,55 @@
     "focusKeyword": "FIA constable jobs",
     "featured": true,
     "publishDate": "2026-05-18T14:20:00Z"
-  }
-]
-  {
-    "id":"job-fia-data-entry",
-    "category":"FIA Jobs",
-    "title":"FIA Data Entry Operator",
-    "date":"2026-05-18",
-    "location":"Islamabad",
-    "excerpt":"Federal Investigation Agency seeks Data Entry Operators. Learn the required computer and typing skills.",
-    "apply":"https://www.fia.gov.pk/",
-    "content":"<p>Ensure you meet the minimum qualification and complete the online application on the FIA site.</p>"
   },
   {
-    "id":"job-punjab-police-constable",
-    "category":"Punjab Police Jobs",
-    "title":"Punjab Police Constable Recruitment",
-    "date":"2026-05-10",
-    "location":"Punjab",
-    "excerpt":"Punjab Police has launched a new constable recruitment drive with online registration updates.",
-    "apply":"https://punjabpolice.gov.pk/",
-    "content":"<p>Review the physical test requirements and document checklist before applying.</p>"
+    "id": "job-fia-data-entry",
+    "category": "FIA Jobs",
+    "title": "FIA Data Entry Operator",
+    "date": "2026-05-18",
+    "location": "Islamabad",
+    "excerpt": "Federal Investigation Agency seeks Data Entry Operators. Learn the required computer and typing skills.",
+    "apply": "https://www.fia.gov.pk/",
+    "content": "<p>Ensure you meet the minimum qualification and complete the online application on the FIA site.</p>"
   },
   {
-    "id":"job-wapda-junior-engineer",
-    "category":"Army / ASF / WAPDA Jobs",
-    "title":"WAPDA Junior Engineer",
-    "date":"2026-05-08",
-    "location":"Multan",
-    "excerpt":"WAPDA is hiring Junior Engineers. Check qualifications, age limit and application steps.",
-    "apply":"https://www.wapda.gov.pk/",
-    "content":"<p>Submit the application through the WAPDA career portal and keep your degree documents ready.</p>"
+    "id": "job-punjab-police-constable",
+    "category": "Punjab Police Jobs",
+    "title": "Punjab Police Constable Recruitment",
+    "date": "2026-05-10",
+    "location": "Punjab",
+    "excerpt": "Punjab Police has launched a new constable recruitment drive with online registration updates.",
+    "apply": "https://punjabpolice.gov.pk/",
+    "content": "<p>Review the physical test requirements and document checklist before applying.</p>"
   },
   {
-    "id":"job-navttc-instructor",
-    "category":"NAVTTC Courses",
-    "title":"NAVTTC Instructor Vacancy",
-    "date":"2026-05-05",
-    "location":"Karachi",
-    "excerpt":"NAVTTC invites applications for instructor roles in trade training centers.",
-    "apply":"https://navttc.gov.pk/",
-    "content":"<p>Prepare your teaching certifications and apply before the online registration deadline.</p>"
+    "id": "job-wapda-junior-engineer",
+    "category": "Army / ASF / WAPDA Jobs",
+    "title": "WAPDA Junior Engineer",
+    "date": "2026-05-08",
+    "location": "Multan",
+    "excerpt": "WAPDA is hiring Junior Engineers. Check qualifications, age limit and application steps.",
+    "apply": "https://www.wapda.gov.pk/",
+    "content": "<p>Submit the application through the WAPDA career portal and keep your degree documents ready.</p>"
   },
   {
-    "id":"job-scholarship-coordinator",
-    "category":"Scholarships",
-    "title":"Scholarship Program Coordinator",
-    "date":"2026-05-03",
-    "location":"Islamabad",
-    "excerpt":"A scholarship support role is available for coordinators handling application guidance.",
-    "apply":"https://www.hec.gov.pk/",
-    "content":"<p>This position supports students with document review and application tracking for scholarship schemes.</p>"
+    "id": "job-navttc-instructor",
+    "category": "NAVTTC Courses",
+    "title": "NAVTTC Instructor Vacancy",
+    "date": "2026-05-05",
+    "location": "Karachi",
+    "excerpt": "NAVTTC invites applications for instructor roles in trade training centers.",
+    "apply": "https://navttc.gov.pk/",
+    "content": "<p>Prepare your teaching certifications and apply before the online registration deadline.</p>"
+  },
+  {
+    "id": "job-scholarship-coordinator",
+    "category": "Scholarships",
+    "title": "Scholarship Program Coordinator",
+    "date": "2026-05-03",
+    "location": "Islamabad",
+    "excerpt": "A scholarship support role is available for coordinators handling application guidance.",
+    "apply": "https://www.hec.gov.pk/",
+    "content": "<p>This position supports students with document review and application tracking for scholarship schemes.</p>"
   }
 ]
