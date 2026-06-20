@@ -146,6 +146,11 @@ The app will still work offline! Data is cached locally and synced to Firebase w
 - **Issue**: Using old browser/cached page
 - **Solution**: Clear browser cache and hard-refresh: `Ctrl+Shift+R` (Windows/Linux) or `Cmd+Shift+R` (Mac)
 
+### Firebase Storage CORS blocked
+
+- **Issue**: Uploads to Firebase Storage fail from your deployed origin
+- **Solution**: Configure your storage bucket CORS policy to allow requests from `https://pakistangovtupdates.pages.dev` or your site origin.
+
 ### Database size limit exceeded
 
 - **Issue**: Firebase Spark plan has limits

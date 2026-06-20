@@ -248,16 +248,16 @@
               <div class="form-group">
                 <label>Featured Image for Homepage *</label>
                 <div class="file-upload">
-                  <input type="file" name="image" accept="image/png,image/jpeg" required>
-                  <p>🖼️ Upload small image for homepage (PNG, JPG)</p>
+                  <input type="url" name="image" placeholder="https://example.com/image.jpg">
+                  <p>🖼️ Enter image URL for homepage (PNG, JPG). Use external URL.</p>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Detail Page Image/PDF (optional)</label>
                 <div class="file-upload">
-                  <input type="file" name="detailImage" accept="image/png,image/jpeg,application/pdf">
-                  <p>📄 Upload large image or PDF for detail page</p>
+                  <input type="url" name="detailImage" placeholder="https://example.com/detail-image.jpg">
+                  <p>📄 Enter image or document URL for detail page (optional)</p>
                 </div>
               </div>
 
@@ -364,16 +364,16 @@
               <div class="form-group">
                 <label>Featured Image for Homepage *</label>
                 <div class="file-upload">
-                  <input type="file" name="image" accept="image/png,image/jpeg" required>
-                  <p>🖼️ Upload small image for homepage (PNG, JPG)</p>
+                  <input type="url" name="image" placeholder="https://example.com/image.jpg">
+                  <p>🖼️ Enter image URL for homepage (PNG, JPG). Use external URL.</p>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Detail Page Image/PDF (optional)</label>
                 <div class="file-upload">
-                  <input type="file" name="detailImage" accept="image/png,image/jpeg,application/pdf">
-                  <p>📄 Upload large image or PDF for detail page</p>
+                  <input type="url" name="detailImage" placeholder="https://example.com/detail-image.jpg">
+                  <p>📄 Enter image or document URL for detail page (optional)</p>
                 </div>
               </div>
 
@@ -457,16 +457,16 @@
               <div class="form-group">
                 <label>Featured Image for Homepage *</label>
                 <div class="file-upload">
-                  <input type="file" name="image" accept="image/png,image/jpeg" required>
-                  <p>🖼️ Upload small image for homepage (PNG, JPG)</p>
+                  <input type="url" name="image" placeholder="https://example.com/image.jpg">
+                  <p>🖼️ Enter image URL for homepage (PNG, JPG). Use external URL.</p>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Detail Page Image/PDF (optional)</label>
                 <div class="file-upload">
-                  <input type="file" name="detailImage" accept="image/png,image/jpeg,application/pdf">
-                  <p>📄 Upload large image or PDF for detail page</p>
+                  <input type="url" name="detailImage" placeholder="https://example.com/detail-image.jpg">
+                  <p>📄 Enter image or document URL for detail page (optional)</p>
                 </div>
               </div>
 
@@ -541,16 +541,16 @@
               <div class="form-group">
                 <label>Featured Image for Homepage *</label>
                 <div class="file-upload">
-                  <input type="file" name="image" accept="image/png,image/jpeg" required>
-                  <p>🖼️ Upload small image for homepage (PNG, JPG)</p>
+                  <input type="url" name="image" placeholder="https://example.com/image.jpg">
+                  <p>🖼️ Enter image URL for homepage (PNG, JPG). Use external URL.</p>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Detail Page Image/PDF (optional)</label>
                 <div class="file-upload">
-                  <input type="file" name="detailImage" accept="image/png,image/jpeg,application/pdf">
-                  <p>📄 Upload large image or PDF for detail page</p>
+                  <input type="url" name="detailImage" placeholder="https://example.com/detail-image.jpg">
+                  <p>📄 Enter image or document URL for detail page (optional)</p>
                 </div>
               </div>
 
@@ -599,16 +599,16 @@
               <div class="form-group">
                 <label>Featured Image for Homepage *</label>
                 <div class="file-upload">
-                  <input type="file" name="image" accept="image/png,image/jpeg" required>
-                  <p>🖼️ Upload small image for homepage (PNG, JPG)</p>
+                  <input type="url" name="image" placeholder="https://example.com/image.jpg">
+                  <p>🖼️ Enter image URL for homepage (PNG, JPG). Use external URL.</p>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>Detail Page Image/PDF (optional)</label>
                 <div class="file-upload">
-                  <input type="file" name="detailImage" accept="image/png,image/jpeg,application/pdf">
-                  <p>📄 Upload large image or PDF for detail page</p>
+                  <input type="url" name="detailImage" placeholder="https://example.com/detail-image.jpg">
+                  <p>📄 Enter image or document URL for detail page (optional)</p>
                 </div>
               </div>
 
@@ -695,8 +695,9 @@ Scholarships 2026</textarea>
             <h2>Media Upload & Management</h2>
             <div class="media-uploader">
               <div class="file-upload large">
-                <input type="file" id="mediaFile" accept="image/*,video/*" multiple>
-                <p>Drag and drop media files or click to upload</p>
+                <input type="url" id="mediaUrlInput" placeholder="https://example.com/media.jpg">
+                <button type="button" id="addMediaBtn" class="btn-primary">➕ Add Media URL</button>
+                <p>Provide a media URL and click Add. Files are not uploaded from the browser.</p>
               </div>
             </div>
             <div id="mediaGallery" class="media-gallery"></div>
@@ -753,11 +754,9 @@ Scholarships 2026</textarea>
   <!-- Success/Error Toast -->
   <div id="toast" class="toast"></div>
 
-  <!-- Firebase for cross-device data sync -->
-  <!-- Firebase FIXED VERSION -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <!-- Firebase for cross-device data sync (Compat build for v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database-compat.js"></script>
 
   <script>
     // Firebase Configuration
@@ -771,18 +770,16 @@ Scholarships 2026</textarea>
       appId: "1:443901497043:web:0370688fdba8e03e584e26"
     };
 
-    // Initialize Firebase
+    // Initialize Firebase (compat)
     try {
       firebase.initializeApp(firebaseConfig);
       window.database = firebase.database();
       window.firebaseReady = true;
-      window.firebaseStorageReady = window.location.protocol === 'https:';
-      if (!window.firebaseStorageReady) {
-        console.warn('⚠️ Firebase Storage disabled in non-secure environment. Files will be kept locally.');
-      }
-      console.log("✅ Firebase Connected Successfully");
+      // Explicitly disable storage usage for Spark plan compatibility
+      window.firebaseStorageReady = false;
+      console.log('✅ Firebase Connected Successfully (database only)');
     } catch (e) {
-      console.warn("⚠️ Firebase initialization failed, using local storage fallback", e);
+      console.warn('⚠️ Firebase initialization failed, using local storage fallback', e);
       window.database = null;
       window.firebaseReady = false;
       window.firebaseStorageReady = false;

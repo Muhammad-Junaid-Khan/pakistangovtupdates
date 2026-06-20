@@ -100,6 +100,15 @@ window.adminDB = {
     );
   },
 
+  _isStorageCorsError(error) {
+    return error && error.message && (
+      error.message.includes('CORS') ||
+      error.message.includes('Access-Control') ||
+      error.message.includes('preflight') ||
+      error.message.includes('HTTP op status')
+    );
+  },
+
   async saveData(path, data) {
     const localKey = this._getLocalKey(path);
     const saveLocal = () => {
@@ -114,8 +123,9 @@ window.adminDB = {
       }
     };
 
-    if (!window.firebaseReady) {
-      console.log('Firebase not configured - saving to localStorage only');
+    if (!window.firebaseReady || !navigator.onLine) {
+      if (!navigator.onLine) console.warn('Offline mode');
+      console.log('Firebase not available - saving to localStorage only');
       saveLocal();
       return false;
     }
@@ -133,7 +143,8 @@ window.adminDB = {
 
   getData(path) {
     const localKey = this._getLocalKey(path);
-    if (!window.firebaseReady) {
+    if (!window.firebaseReady || !navigator.onLine) {
+      if (!navigator.onLine) console.warn('Offline mode');
       const cached = localStorage.getItem(localKey);
       return Promise.resolve(cached ? JSON.parse(cached) : null);
     }
@@ -330,28 +341,29 @@ class AdminCMS {
       this.globalSearch(e.target.value);
     });
 
-    document.getElementById('mediaFile').addEventListener('change', (e) => {
-      this.handleMediaUpload(e);
-    });
-
-    document.querySelectorAll('.file-upload').forEach(upload => {
-      const input = upload.querySelector('input[type="file"]');
-      if (!input) return;
-
-      // Make the visible upload box trigger the hidden file input.
-      upload.addEventListener('click', () => input.click());
-
-      input.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        let fileName = upload.querySelector('.file-name');
-        if (!fileName) {
-          fileName = document.createElement('p');
-          fileName.className = 'file-name';
-          upload.appendChild(fileName);
+    const addMediaBtn = document.getElementById('addMediaBtn');
+    if (addMediaBtn) {
+      addMediaBtn.addEventListener('click', async () => {
+        const urlInput = document.getElementById('mediaUrlInput');
+        if (!urlInput) return;
+        const url = urlInput.value && urlInput.value.trim();
+        if (!url) {
+          this.showToast('Please enter a valid media URL', 'error');
+          return;
         }
-        fileName.textContent = file ? `Selected file: ${file.name}` : 'Upload file';
+        const itemData = {
+          id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
+          name: url.split('/').pop() || 'media',
+          url,
+          type: url.split('.').pop() || 'media'
+        };
+        this.data.media.push(itemData);
+        await adminDB.saveData('cms_media', this.data.media);
+        urlInput.value = '';
+        await this.renderMediaGallery();
+        this.showToast('Media URL added', 'success');
       });
-    });
+    }
   }
 
   switchSection(section) {
@@ -403,11 +415,11 @@ class AdminCMS {
       // Disable native HTML validation (can block when controls are hidden)
       form.noValidate = true;
       const requiredFieldsByType = {
-        job: ['title','department','category','province','city','lastDate','education','ageLimit','eligibility','howToApply','applyLink','seoTitle','seoDescription','focusKeyword','image'],
-        scheme: ['title','department','category','eligibility','benefits','process','documents[]','deadline','link','seoTitle','seoDescription','image'],
-        course: ['title','institute','duration','eligibility','howToApply','category','deadline','link','seoTitle','seoDescription','image'],
-        scholarship: ['title','country','deadline','eligibility','applyProcess','documents[]','link','seoTitle','seoDescription','image'],
-        post: ['title','category','excerpt','body','seoTitle','seoDescription','focusKeyword','image']
+        job: ['title','department','category','province','city','lastDate','education','ageLimit','eligibility','howToApply','applyLink','seoTitle','seoDescription','focusKeyword'],
+        scheme: ['title','department','category','eligibility','benefits','process','documents[]','deadline','link','seoTitle','seoDescription'],
+        course: ['title','institute','duration','eligibility','howToApply','category','deadline','link','seoTitle','seoDescription'],
+        scholarship: ['title','country','deadline','eligibility','applyProcess','documents[]','link','seoTitle','seoDescription'],
+        post: ['title','category','excerpt','body','seoTitle','seoDescription','focusKeyword']
       };
 
       const requiredFields = requiredFieldsByType[type] || [];
@@ -428,59 +440,21 @@ class AdminCMS {
 
       const formData = new FormData(form);
       const data = {};
-      const filePromises = [];
 
       for (const [key, value] of formData.entries()) {
         const normalizedKey = key.endsWith('[]') ? key.slice(0, -2) : key;
-
-        if (value instanceof File && value.name) {
-          // Upload to Firebase Storage when available and store public URL; also save to IndexedDB as backup
-          const promise = (async () => {
-            const imageId = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            data[`${normalizedKey}Name`] = value.name;
-            data[`${normalizedKey}Type`] = value.type;
-            data[`${normalizedKey}Id`] = imageId;
-
-            // If Firebase Storage is configured and the page is secure, upload and get public URL
-            if (window.firebaseStorageReady && firebase.storage) {
-              try {
-                const storageRef = firebase.storage().ref();
-                const fileRef = storageRef.child(`cms_media/${imageId}_${value.name}`);
-                const snapshot = await fileRef.put(value);
-                const url = await snapshot.ref.getDownloadURL();
-                data[`${normalizedKey}Url`] = url;
-                // Also set primary field to URL for frontend convenience
-                data[normalizedKey] = url;
-                console.log(`✅ Uploaded ${normalizedKey} to Firebase Storage: ${url}`);
-              } catch (e) {
-                console.warn('Firebase Storage upload skipped or failed:', e);
-              }
-            } else {
-              console.warn('Firebase Storage upload disabled; storing local copy only.');
-            }
-
-            // Always save to IndexedDB as a local backup (fast local retrieval)
-            try {
-              await imageDB.saveImage(imageId, value);
-              if (!data[normalizedKey]) {
-                data[normalizedKey] = '';
-              }
-              console.log(`✅ Stored ${normalizedKey} in IndexedDB: ${imageId}`);
-            } catch (e) {
-              console.error('IndexedDB storage error:', e);
-              this.showToast(`⚠️ Image storage warning: ${e.message}`, 'error');
-            }
-          }).call(this);
-          filePromises.push(promise);
-        } else if (key.endsWith('[]')) {
+        if (key.endsWith('[]')) {
           data[normalizedKey] = Array.isArray(data[normalizedKey]) ? data[normalizedKey] : [];
           if (value) data[normalizedKey].push(value);
-        } else if (value) {
+        } else {
           data[normalizedKey] = value;
         }
       }
 
-      await Promise.all(filePromises);
+      // Ensure image URLs exist or set placeholder
+      const placeholder = 'https://via.placeholder.com/800x450?text=No+Image';
+      if (!data.image) data.image = placeholder;
+      if (!data.detailImage) data.detailImage = placeholder;
 
       data.slug = this.generateSlug(data.title);
       data.publishDate = new Date().toISOString();
@@ -825,35 +799,15 @@ class AdminCMS {
   }
 
   async handleMediaUpload(e) {
-    const files = Array.from(e.target.files || []);
-
-    for (const file of files) {
-      const itemData = {
-        id: Date.now().toString() + Math.random().toString(36).slice(2, 8),
-        name: file.name,
-        type: file.type,
-        size: file.size
-      };
-      this.data.media.push(itemData);
-      await imageDB.saveImage(itemData.id, file);
-      await adminDB.saveData('cms_media', this.data.media);
-    }
-
-    await this.renderMediaGallery();
-    this.showToast(`Uploaded ${files.length} media file(s)`, 'success');
+    // File uploads are disabled in this deployment. Use the media URL input instead.
+    this.showToast('File uploads are disabled. Use the Media URL input to add media.', 'error');
   }
 
   async copyMediaUrl(id) {
     const item = this.data.media.find(media => media.id === id);
-    let url = item?.dataUrl;
-    if (!url) {
-      const blob = await imageDB.getImage(id);
-      if (blob) {
-        url = URL.createObjectURL(blob);
-      }
-    }
+    const url = item?.url;
     if (url) {
-      navigator.clipboard.writeText(url);
+      try { await navigator.clipboard.writeText(url); } catch (e) {}
       this.showToast('Media URL copied to clipboard', 'success');
     } else {
       this.showToast('Media URL not available', 'error');
@@ -865,15 +819,9 @@ class AdminCMS {
     if (!gallery) return;
     gallery.innerHTML = '';
 
+    const placeholder = 'https://via.placeholder.com/600x400?text=No+Preview';
     for (const itemData of this.data.media) {
-      let src = itemData.dataUrl;
-      if (!src) {
-        const blob = await imageDB.getImage(itemData.id);
-        if (blob) {
-          src = URL.createObjectURL(blob);
-        }
-      }
-
+      const src = itemData.url || placeholder;
       const item = document.createElement('div');
       item.className = 'media-item';
       item.dataset.mediaId = itemData.id;
